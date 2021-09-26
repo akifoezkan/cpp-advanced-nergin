@@ -1,0 +1,96 @@
+======== [soru:]
+compiler user-defined default olarak yazilmis special member function lari
+noexcept yazar mi, yoksa biz eklemeli miyiz?
+
+[cevap:]
+hayir bizim yazmamiza gerek yok.
+
+-> special function 
+   [user-defined]        user yazarsa, including "=default"
+   [implicitly declared] derleyici yazarsa
+
+-> derleyicinin yazdigi kodda
+   user declared default ile implicitly declared default arasinda bir fark yoktur.
+
+-> derleyici class member variable lara bakar.
+   eger bunlar noexcept ise special member functionlari noexcept yazar. 
+
+========= [soru:]
+fonksiyonun geri donus degeri const yazilmamali mi?
+
+ex: su dogru mu?
+    
+    class Myclass{};
+    const Myclass foo();    // const yazilmali mi?
+
+[cevap:]
+burada "const" yazmak, const dogrulugunun abartilmasi
+-> tasimayi engeller
+
+ex:
+    class Myclass{
+    public:
+        Myclass() = default;
+        Myclass(const Myclass&) = default;
+        Myclass& operator=(const Myclass&)
+        {
+            std::cout << "copy assignment\n"; 
+            return *this;
+        }
+
+        Myclass& operator=(Myclass&&)
+        {
+            std::cout << "move assignment\n"; 
+            return *this;
+        }
+    }
+
+    Myclass foo()
+    {
+        Myclass x;
+        return x;
+    }
+
+    const Myclass foo2()
+    {
+        Myclass x;
+        return x;
+    }
+
+
+    int main()
+    {
+        Myclass x, y;
+
+        x = y;              // copy assignment
+        x = std::move(y);   // move assignment
+
+        x = foo();      // move ctor, return type R-val
+
+        x = foo2();     // copy ctor, return type const R-val
+                        // according to function overloading resolution rules:
+                        // - move assignment is not viable (parametresi const degil)
+                        // - copy assignment is viable
+    }
+
+========= [soru:]
+function declaration da, parametreler const yapilmali mi?
+
+[cevap:]
+hayir, bu const dogrulugunun abartilmasi
+
+  - definition in header
+    void foo(double x);       // burada parametreyi const yapma
+    
+    void foo(const double x); // redeclarations 
+
+    note: yukaridaki iki fonksiyon redeclaration, function overloading degil
+
+  - implementation
+
+    // implementation da bu ok, ama const parametre interface e tasinmamali
+    void foo(const double x)
+    {
+      // - x cannot be changed by mistake
+      // - compiler can optimize read-only parameter x
+    }

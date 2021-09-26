@@ -1,0 +1,403 @@
+19.30 - 22.30, 
+    - ilk ara 1 saat sonra: 15
+    - 2.ara 10 dakika
+
+=> value category, move semantic ve perfect forwarding icin onemli
+
+======================== value category ===============================
+# expression (ifade) : 
+    - operators, identifier, constants kullanilarak olusturulan yapilar
+    - two main features: 
+        * expression type, 
+        * value category
+
+    ex:
+        x + 10 //an expression, it has a type and a val cat.
+
+# value category:
+    - 3 primary value categories (an expression has to be one of these 3)
+        * L-value expression
+        * X-value expression   (expiring value)
+        * PR-value expression
+ 
+    - gl-value = lvalue + xvalue   (has identity?) 
+    -  r-value = xvalue + prvalue  (movable? can safely be moved from?)
+    
+## screenshot: standard definition:
+        - gl-value(generalized l-value):
+            bellekte bir yere karsilik gelir
+
+        - pr value:
+            dinle 
+
+        - x value:
+            tamamen move semantic, 
+            kaynaklari yeniden kullanilabilir
+
+============= remember: type deduction =============================
+type deduction:
+# type(x) = T ise decltype(x) 
+    => x bir isim ise
+        - x in turu return edilir
+        - ref ve const korunur
+
+        ex:
+            int x{};
+            int& r = x;         // decltype(x) = int&
+            const int& r = x;   // decltype(x) = const int&
+
+            struct Data{ int a };
+
+            decltype(mydata.a)  // a bir isim,  int
+            decltype(p->a)      // a bir isim, int
+
+    => x bir expression ise
+        - L value : T&
+        - PR value: T
+        - X value : T&&
+        
+        ex:
+            int x = 10;
+            int* ptr = &x;
+            int&& foo();
+            
+            decltype((x))    // int&, **** interview ***
+            decltype(x + 5)  // int
+
+            decltype(*ptr)  // int&, L-value
+            decltype(++x)   // int&, L-value
+
+            decltype(foo());        // int&&
+            decltype(std::move(x)); // int&&
+====================================================================
+# Lets write a code that returns the value category
+
+code:
+    template<typename T>
+    struct Valcat {
+        constexpr static const char* p = "PR value";
+    };
+
+    template<typename T>
+    struct Valcat<T&> {
+        constexpr static const char* p = "L value";
+    };
+
+    template<typename T>
+    struct Valcat<T&&> {
+        constexpr static const char* p = "X value";
+    };
+
+    #define pvcat(e)                                   \
+        std::cout << "value category of " << #e        \
+                  << Valcat<decltype((e))>::p << '\n'
+
+    int f1();
+    int &f2();
+    int &&f3();
+
+    int main()
+    {
+        int x = 10;
+
+        std::cout << Valcat<decltype((x))>::p << "\n"; 
+
+        pvcat(x);
+    }
+
+code:
+    #include <type_traits>
+
+    int x{};
+
+    if constexpr (std::is_lvalue_reference_v<decltype((x))>)
+        std::cout << "l-value expression\n";
+    else if constexpr (std::is_rvalue_reference_v<decltype((x))>)
+        std::cout << "x-value expression\n";
+    else
+        std::cout << "pr-value expression\n";
+
+
+# L-value 
+    - isim formunda olan butun ifadeler L-val category sindedir
+
+        ex:
+            int&& r  = x + 5;
+            pvcat(r);           // L-val category, isim formu
+
+    - [] (), = operatorleri ile olusturylan ifadeler
+
+        ex:
+            pvcat(x += 4);           // L-val category, = operatoru 
+    
+    - ++ prefix operatoru
+
+        ex:
+            pvcat(++x);             // L-val category
+
+    - comma (,) operatoru, sagdaki eleman L-val ise L-val dir
+        ???
+        ex:
+          
+    - ternary ???
+         pvcat(z > 2 ? x : y)       // L-val
+
+    - diger operatorler
+        ex:
+            pvcat(x);
+
+    - string literal 
+        ex:
+            pvcat("asdasd");
+
+# PR-value
+    - ++ postix operatoru
+        ex:
+            pvcat(x++);           // R-val category
+
+    - +, - operatorler
+        ex:
+            pvcat(+x);  // PR value
+            pvcat(-x);  // PR value
+
+    - sabit ifadeler except string literal, including char
+        ex:
+            pvcat('d');     // PR value
+            pvcat('5');     // PR value
+            pvcat(Nec{});   // PR value
+            pvcat(void());  // PR value
+
+    - nullptr
+
+
+# X value
+    - geri donus degeri sag taraf referansi olan fonksiyonlara yapilan cagri
+
+        ex:
+            pvcat(move(...));   // X -valie
+
+            int&& foo();
+            pvcat(foo());       // X-value
+
+
+    - ???
+        ex:
+            struct Nec {
+                int x;
+            };
+
+            int main()
+            {
+                pvcat(Nec{}.x); // X value
+            }
+
+    -
+        ex:
+            struct Nec{
+                int x;
+            };
+
+            int main()
+            {
+                using Ar5 = int[5];
+
+                Ar5{}[2]    // X-value expression, Microsoft has a bug
+            }
+
+============================ move semantic =================================
+# R-value reference:
+    perfect forwarding ve move implementation icin uydurulmus bir concept
+
+    ex:
+        in &&r = 10;    // R-value ile init. etmek zorundayiz
+
+
+# const R-value referans L-value ya baglanabilir
+
+    - T&       = L-value 
+
+    - const T& = L-val, R-val, const, non-const
+
+    - T&&      = R-val
+
+#
+    class Myclass {
+    public:
+        Myclass(const Myclass& r);  // copy ctor
+        Myclass(Myclass&& r);       // move ctor
+    };
+
+=====================================================================
+special member functions:
+
+    ex:
+        class Myclass {
+        public:
+            Myclass();                          // default ctor
+            ~Myclass();                         // dtor
+            Myclass(const Myclass&);            // copy ctor
+            Myclass(Myclass&&);                 // move ctor
+            Myclass &operator=(const Myclass&); // copy assignment
+            Myclass &operator=(Myclass&&);      // move assignment
+        };
+
+# 3 status
+    - user declared
+    - implicitly declared
+    - not declared
+
+## user declared
+    ex:
+        class Myclass {
+        public:
+            Myclass() = default;    // user declared
+            Myclass() = delete;     // user declared
+            Myclass() { };          // user declared
+            
+        };
+
+## not declared
+    ex:
+        // default ctor is not declared
+        class Myclass {
+        public:
+            Myclass(int);
+        };
+    
+    ex:
+        // move ctor is not declared
+        class Myclass {
+        public:
+            Myclass(int);
+            Myclass(const Myclass&);
+        };
+
+# ozel uye fonksiyonu yazma sirasinda bir hata olursa,
+  yazmasi gereken fonksiyonu delete eder.
+
+    ex:
+        class Member {
+        private:
+            Member();
+        }
+
+        class Myclass {
+        private:
+            Member mx;  // Member in default ctor unu cagiramayacagindan
+                        // Myclass in default ctor u derleyici tarafindan 
+                        // delete edilmis durumda
+        };
+
+        Myclass mx; // bunu yazdigim an syntax error, yazmassam sorun yok
+
+=> derleyici su durumlarde delete eder: burayi dinle
+  - const,ref e ilk deger verememek
+  - delete edilmis fonk. call yapmak
+
+=> istisna: move ctor yazilirken hata cikarsa, 
+            derleyici move ctor hic yazilmamis gibi code generate eder.
+            -> diger butun special func. delete eder
+
+------
+=> dtor yazilirsa, copy ctor ve copy assignment yazdirilmali
+                   bu deprecated, gecmise uyumluluk icin korunuyor
+
+=> dtor user declared degilse, derleyici
+   dtor u default eder
+
+=> dtor, copy ctor, yada copy assignment yazilirsa, derleyici 
+   move ctor/assignment yazmaz
+
+=> move ctor/assignment yazilirsa, derleyici
+   copy ctor/assignment i delete eder
+
+burayi yeniden dinle??? nergin guzel ozetledi
+--
+
+special function members are explained briefly
+
+ex:
+    class Myclass {
+    public:
+    private:
+        std::string mstr;
+        std::vector<int> mvec;
+    };
+
+#
+    void func(Myclass x);
+
+    void func(const Myclass &x);
+
+===================================================================
+
+- move semantic calinacak kaynak varsa mantikli
+
+    ex:
+        // mesela burada move semantic in bir faydasi yok,
+        // cunku tasinacak kaynak yok, mecbur kopyalanacak
+
+        class Myclass{
+        private:
+            std::array<int, 1000> mx;
+        }
+
+
+# sag taraf referanslari const olabilir ancak pratikte fazla faydasi yok
+  cunku sag taraf referansinin amaci baglandigi nesnenin kaynagini calmak :)
+
+
+# move does not move:
+    ex:
+        static_cast<Myclass&&>(mx)
+        std::move(mx)
+
+    ex:
+        void func(Myclass &&r)
+        {
+            Myclass x(std::move(r));    // move ctor
+
+            // Myclass x(r);    // calls copy ctor since r is not R-value here
+        }
+
+
+    ex:
+        // R-value input
+        void func(Myclass &&r)
+        {
+            Myclass x;
+
+            x = std::move(r);
+        }
+
+        // yukaridaki gibi bir function varsa buyuk ihtimal 
+        // asagidaki gibi bir foksiyonda yazilacak:
+
+        // L-value input
+        void func(const Myclass &r)
+        {
+            Myclass x(r);   // copy ctor
+
+            Myclass y;
+            y = r;          // copy assignment
+        }
+
+    ex:
+        std::string str(10000, 'A');
+        std::string&& r = std::move(str);
+
+
+=> kaynagi calisnmis nesne destroy edilmemisse yeniden kullanilabilir.
+
+
+# 
+
+
+
+
+
+
+
+
+
+

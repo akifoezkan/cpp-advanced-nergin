@@ -1,0 +1,561 @@
+missed first 3 minutes
+
+
+== 
+
+# std::move implementation
+    - move does not move, instead applies typecast
+        * L-value -> R-Value (X-value)
+        * R-value -> R-value
+
+    imp:
+        
+        template<typename T>
+        constexpr std::remove_reference_t<T>&& Move(T&& t) noexcept
+        {
+            return static_cast<std::remove_reference_t<T>&&>(t);
+        }
+
+    ======================================= ileride gorucez
+    # forwarding reference
+        - bana her sey gonderebilirsiniz
+        - R-value -> R value
+        - L-value -> L-value
+    
+        template<typename T>
+        void func(T&&);
+    ========================================================
+
+
+# ex:
+
+    int main()
+    {
+        Myclass &&r = Myclass{};    // move ctor cagirilmis, 
+                                    // default ctor cagirilacak, R-val referensa baglanacak
+        
+        Myclass x = r;              // x copy ctor cagirilir, cunku r is a name (L-value)
+
+        Myclass x = std::move(r);   // x move ctor
+
+    }
+
+#
+
+    void func(Myclass);
+        -> R-value input: copy ellision veya move 
+
+#
+    sol taraf gelirse kopyala
+    sag taraf referans gelir move et (kaynagini cal)
+
+    cozum:
+        2 tane fonksiyon yazacagiz:
+
+        void func(const Myclass& r)
+        {
+            Myclass mx(r);                  // copy ctor
+
+            Myclass mxx;
+            mxx = r;                        // copy assignment
+        }
+
+        void func(Myclass&& r)
+        {
+            Myclass mx{ std::move(r) };     // move ctor
+
+            Myclass mx{ r };     // copy ctor
+                                 // en tipik hata burada move kullanmamak
+                                 // r nin type i Myclass&& ama
+                                 // r ifadesi bir name, yani L-val expression
+        }
+        
+        int main()
+        {
+            Myclass m;
+            func(m);
+            func(Myclass{});
+        }
+
+# moved-from state
+    - gecerli bir nesnedir, kullanilabilir ancak degeri hakkinda bir ongorude bulunmamaliyiz
+
+    code: video dan bak
+
+    ex:
+        std::string str{10000, 'Q'};
+        
+        // amacim str nin kaynagini calmak
+
+        std::string s = std::move(str);
+
+        // str yeniden kullanilabiir
+
+        cout << str << "\n";    // implementation defined, ekrana cikan yaziyi Allah bilir
+                                // ancak str nesnesi valid durumda, atama yapilabilir
+
+    ex:
+        ifstream ifs{ "deneme.txt" };
+        if(!ifs) {
+            cerr << "dosya acilamadi\n";
+            return 1;
+        }
+
+        string sline;
+        vector<string> svec; 
+
+        while(getline(ifs, sline)) {
+            // vec.push_back 2 overload (const T&, T&&)
+            
+            svec.push_back(sline);              // copy ctor, sline is L-val
+
+            svec.push_back( std::move(sline) );  // move ctor, sline kaynagi calindi 
+
+            // sline <- moved-from state
+            // valid oldugu icin while loop calisir
+        }
+
+    ex:
+        template<typename T>
+        void Swap(T& left, T& right)
+        {
+            // swap without copy 
+
+            T temp{ std::move(left) };  // move ctor
+            left = std::move(right);    // move assignment???
+            right = std::move(temp);    //  
+        }
+
+# bir fonksiyonu R-val input ile tanimlama sepebleri
+
+    ex: func(std::string&& x)
+
+    sebepler:
+        - %95 kaynagi calmak icin
+        - kaynagi calma belli kosullara bagli olabilir
+        - sag taraf degeri ve sol taraf degeri icin different behaviour
+
+    => bu tarz bir fonksiyona kaynagini calmasini istedigimiz parametreyi gondermeyecegiz
+
+==============================================================================
+# bir fonksiyonun parametresei neler olabilir?
+    
+    - void func(Myclass& r) 
+        * out parametre, inout parametre
+        * input parametre degistirilecek
+        
+        => mumkun oldugunca bu tarz fonksiyon yazmamaliyiz
+           move yokken, return value kopyalamak yerine bu 
+
+            eskiden:
+                void func(Myclass&r, ...)
+
+            simdi: (tasima + copy ellision)
+                Myclass func(...)
+
+        => yine kullanimi tamamen kalkmadi
+            ex: array in tasinmasi, butun elemanlarin tek tek tasinmasi demek
+
+       
+        *=> bu fonksiyona R-val parametre gonderilemez
+
+        a) r-val gonderecegiz
+        b) bu nesne degistirilecek
+
+    - void (const Myclass&); // in parametre (const L-val)
+        a) nesne okuma amacli kullanilacak, nesne degistirilmeyecek
+        b) bu fonksiyon hem R-val hem L-val input parametre ile cagirabiliriz
+
+    - void (Myclass&&); //
+        a) bu referansin baglandigi nesnenin kaynagi calinabilir/ ama calinmak zorunda degil
+        b) neyle cagirabiliriz
+            - R value expression bir ifade
+                ex:
+                    func(Myclass{});
+
+                    Myclass m;
+                    func(std::move(m));
+
+## bunlar birbirinin overloadi, 3 u birlikte kullanilabilir
+    - void func(Myclass& r);    // out/inout 
+    - void (const Myclass&);    // in
+    - void (Myclass&&);         // R-val
+    - void (const Myclass&&);   // pratikte kullanimi yok, R-val reference genelde nesneyi degistirir 
+
+    => hangi durumda hangi overload cagirilir?
+
+# overload resolution for the above functions:
+    => tablo icin resme bak
+
+    void func(Myclass& r) // 1
+    {
+        cout >> "Myclass &\n";
+    }
+    
+    void (const Myclass&) // 2
+    {
+        cout >> "Myclass &\n";
+    }
+    void (Myclass&&) // 3
+    {
+        cout >> "Myclass &\n";
+    }
+    
+    void (const Myclass&&) // 4
+    {
+        cout >> "Myclass &\n";
+    }
+
+
+    Myclass m;
+    const Myclass cm;
+
+    func(m);    // 1, 1 olmasa 2, 1 ve 2 olmazsa syntax error
+    
+    func(cm);   // 2, 
+                   1 olmazsa syntax error (const ref)
+
+    func(Myclass{});  // 3,
+                        3 olmazsa 2
+                        2 de olmasa syntax error
+
+    func(std::move(m));     // 3, 3 olmazsa 2
+
+    func(std::move(cm));    // 4, 4 olmazsa 2, 2 olmazsa error
+
+
+# dikkat: call by value and reference functionlar bir arada overload edilmeyecek
+
+    ex:
+        void func(Myclass)
+
+        void func(Myclass&)
+
+        => overload var, ancak func. lar arasinda secilebilrlik yok.
+
+        Myclass a;
+        f(a);       // ambiguity
+
+# because of move sematic, call by value functionlar input parametreyi degistirebilir
+
+    void func(Myclass)
+    {
+        this is call by value, move olmasaydi func bunu degistirmezdi
+    }
+
+    Myclass m;
+    func(std::move(m)); // func, m i degistirebilir
+
+
+### 
+ARADAN sonra bir seyler kacirdim
+####
+
+# tipik bir hata ???
+    ex:
+
+    struct Myclass{
+        Myclass() = default;
+        Myclass(const Myclass&) = default;
+        Myclass(Myclass&&) = default;
+
+        Myclass& operator=(const Myclass&)
+        {
+            std::cout << "copy assignment\n";
+            return *this;
+        }
+
+        Myclass& operator=(const Myclass&&)
+        {
+            std::cout << "move assignment\n";
+            return *this;
+        }
+    };
+
+    Myclass foo()
+    {
+        Myclass mx;
+
+        return mx;
+    }
+
+    const Myclass foo2()
+    {
+        Myclass mx;
+
+        return mx;
+    }
+
+    int main()
+    {
+        Myclass mx, my;
+
+        mx = foo();
+        
+        my = foo2();    // copy assignment
+                        // foo2 const return ettigi icin tasima semantigini bloke eder
+    }
+
+============== tasima semantiginden faydalanma yollari =======================
+
+# Sinifin elemanlari baska nesneler turunden ise, derleyici butun special functionlari yazar
+    (including move ctor move assignment)
+
+    Rule of zero:
+        - ozel bir durum yoksa mudahale etme, birak derleyici yazsin
+
+
+    ex:
+        // bu sinif icin kopyalama ve tasima arasinda cok fark var.
+        //  -> deep copy of string vector (very expensive)
+
+        class Person {
+        public:
+
+        private:
+            std::string name;
+            std::vector<std::string> m_friend;
+        };
+
+        // burada tasima fonksiyonundan faydalanmak icin hic bir sey yapmamiza gerek yok
+        // -> derleyicinin yazacagi move ctor, name ve m_friend icin tasima fonksiyonlarini yazar
+
+
+        void func(Person)
+        {
+            // bu fonksiyon Person in kaynakalarini calar
+            -> R-val ve L-val ile cagirilabilir
+        }
+
+
+        int main()
+        {
+          ?? 
+        }
+
+============================== copy elision ===================================
+# Copy elision (c++17)
+    - Tasima maliyet acisindan her zaman en iyi seneryo degil
+    - Tasima dan daha effektif bir yol var: copy elision 
+
+    ex:
+        class Myclass {
+        public:
+
+        private:
+            std::array<int, 1000> ax;   // Move has no advantages
+                                        // cost(move) = cost(copy)
+        }
+
+
+## seneryo-1: Return Value Optimization (RVO)
+
+        Myclass func()
+        {
+            return Myclass{};
+        }
+
+        Myclass x = func(); // kopyalama yok
+                            // x Myclass in adresinde olusturulacak 
+
+
+## seneryo-2: Named RVO optimization
+
+        std::vector<std::string> foo()
+        {
+            std::vector<std::string> vec;   // RVO olmasa: default ctor
+            //...
+
+            return vec;                     // RVO olmasa: default ctor
+        }
+
+
+        auto myvec = foo();     // RVO olmasa copy or move ctor
+
+        => ancak RVO sayesinde sadece 1 tane nesne olusturulur
+
+
+
+## Mandatory (Guaranteed) Copy elision
+
+        void func(std::vector<int> x);
+
+        int main()
+        {
+            func(vector<int>{10000, 2});    // nesne kullanilacagi yerde olusturulacak
+        }
+        
+    => terimde soyle bir sikinti var:
+       C++17 standardlarina gore burada bir kopyalama yok
+       kopyalama olmadigi icin elimine de edilemz :)
+
+
+
+## generalized
+
+    class Myclass {};
+
+    Myclass func()
+    {
+        //...
+
+        return Myclass{};
+    }
+
+    int main()
+    {
+        Myclass mx = func();    // sinifin copy ve move ctor lari delete edilse bile bu kod calisacak
+                                // cunku obje kullanilacagi yerde hayata getirilecek
+    }
+
+
+
+========================
+# temporary materialization
+    - > bir sag taraf degeri (PR-value) ancak bir sol taraf degeri (GL-value) beklenildigi yerde kullanilirsa bir gecici nesne olusturulur
+        PR value -> X value
+        gecici nesne bu anda hayata gelir
+
+
+class Myclass{};
+
+int main(){
+    Myclass && r = Myclass{};   // temporary materialization
+                                // PR value -> X value, a temporary object comes to life
+                                // R-val ref, bu objeye baglanir
+}
+
+
+ex:
+    // temporary materialization
+    ???
+    class Myclass {
+    public:
+        void func();
+        int mx;
+    };
+
+    Myclass{}.func()
+    sizeof(Myclass{});
+
+
+=> bu yuzden mandatory copy elision terimi yanlis
+    ????
+
+
+## bunun bizi ilgilendiren sonucu:
+    PR value ????
+
+    ex:
+        class Myclass {
+        public:
+            Myclass() {
+                std::cout << "Myclass default ctor\n";
+            }
+
+            Myclass(const Myclass&) = delete;
+            Myclass(Myclass&&) = delete;
+        };
+
+
+        Myclass x = Myclass ????
+        Myclass x = Myclass{ Myclass { Myclass{} }};   
+
+
+        => sinifin copy/move ctor lari delete edilmesine ragmen ifade gecerli ve
+            sadece 1 kere default ctor calisir
+        
+        =>  c++17 oncesi, move ctor delete edilse hata gorurduk
+
+        similarly:
+            
+            Myclass foo()
+            {
+                return Myclass{};
+            }
+
+            foo();
+
+## bunun bizi ilgilendiren sonucu:
+    -> Fabrika fonksiyonlari
+
+    Myclass create_object()
+    {
+        return Myclass{};
+    }
+
+    temp. materialization yok.
+    boylece ??? fabrika fonk yazabilecegim
+
+
+# eskiden olsa ??? cekiniyorduk
+
+    ex:
+     simdi su tarz fonksiyonlar cok kullanildi ve cok kullanisli
+
+     void func(Myclass x)
+     {
+
+     }
+
+    ???
+     PR value -> temp mat. yok, direk kullanildigi yerde hayata gelecek
+
+
+# soru:
+
+    Myclass func()
+    {
+        Myclass x;
+
+        return x;   // L-value expression
+    }
+    
+    Myclass a =  func();
+
+    - bu durumda tasima semantigi devreye girer
+      eger compiler RVO yaparsa, move dan daha iyi
+    - ya da mandatory olmayan RVO optimizasyon devreye girecek
+
+
+    sonuc olarak hic bir sekilde tasima yapilmayacak
+
+
+=> 
+
+
+**** => RVO code un semantic anlamini degistiriyor
+        -> move ctor un cagirilmasi yerine sadece 1 kere default ctor cagirilacak
+
+        orn: copy ctor/move ctor icine kod koysak (counter, logging), bunlar cagirilmayacak
+
+
+========================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
