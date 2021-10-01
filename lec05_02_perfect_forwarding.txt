@@ -1,0 +1,123 @@
+=================== Forwarding Reference ======================
+
+# template function with reference parameter 
+
+  template<typename T>
+  void func(T& x)
+  {
+      // this function does NOT protect input parameters'
+	  // - val-cat and 
+      // - const ness 
+  }
+
+# Forwarding reference (universal reference)
+
+  template<typename T>
+  void func(T&& x)
+  {
+      // this function protects input parameters'
+	  // - val-cat (not primary val-cat, only L-val or R-val) 
+      // - const ness 
+  }
+
+## see the table (lec05_01_perfect_forwarding.jpeg)
+     		input   	     T 			    x
+     func(   L-val   )     Type&          Type&
+     func(const L-val)  const Type&    const Type&
+     func(   R-val   )     Type	          Type&&
+     func(const R-val)  const Type     const Type&&
+     
+
+==============
+# std::forward
+
+  	template<typename T>
+  	void func(T&& x)
+  	{
+  	   std::forward<T>(x); 
+  	}
+  
+	forward sadece su isi yapar (conditional move):
+	- input R-val => std::move(x)
+    - input L-val => x
+
+
+## [usage]:
+	ex:
+    	class Myclass {};
+
+    	void f(Myclass&)
+    	{
+    	    std::cout << "f(Myclass&)\n";
+    	}
+
+    	void f(const Myclass&)
+    	{
+    	    std::cout << "f(const Myclass&)\n";
+    	}
+
+    	void f(Myclass&&)
+    	{
+    	    std::cout << "f(Myclass&&)\n";
+    	}
+
+    	void f(const Myclass&&)
+    	{
+    	    std::cout << "f(const Myclass&&)\n";
+    	}
+
+
+        // func ile call etmek = f ile call etmek
+    	template<typename T>
+    	void func(T&& x)
+    	{
+    	   std::forward<T>(x); // either uses "move(x)" or "x"
+    	}
+
+  		int main()
+  		{
+  		    Myclass mx;
+  		    const Myclass cmx;
+
+  		    func(mx);             // Myclass&
+  		    func(cmx);            // const Myclass&
+  		    func(  Myclass{}  );  // Myclass&&
+  		    func(std::move(mx));  // Myclass&&
+  		    func(std::move(cmx)); // const Myclass&&
+  		}
+
+
+    ex:
+        // forward functionality using templates
+
+        template<typename T>
+        void func(T&& x)
+        {
+           if constexpr(std::is_lvalue_reference_v<T>){
+              f(x);
+           }
+           else{
+              f(move(x));
+           }
+        }
+
+# [implementation]
+## forward implementation (constexpr is ignored)
+
+    template <typename T>
+    T&& Forward(typename std::remove_reference_t<T>& param)
+    {
+        return static_cast<T&&>(param);
+    }
+
+    // [see lec05_02/03_pforwarding_impl for its parameter resolution]
+
+
+## move implementation
+   - input ne olursa olsun R-val yap
+
+    template <typename T>
+    constexpr std::remove_reference_t<T>&& Move(T&& t) noexcept
+    {
+        return static_cast<std::remove_reference_t<T>&&>(param);
+    }

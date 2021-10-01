@@ -1,0 +1,79 @@
+reminder
+
+ex:
+  class person{
+  
+  }
+
+
+kapasiteyi bozan 3 fonksiyon:
+- move
+- shrink_to_fit
+- swap
+
+==================================================================
+# noexcept ve tasima semantigi:
+
+# reminder:
+  - noexcept ile tanimlanan (global, member) fonksiyonlar exception 
+    gondermeme garantisi verir.
+  
+  - noexcept hem bir specifier
+
+  - nasil kullanilir:
+    [noexcept specifier:]
+    ex: void func(int)noexcept;            // noexcept
+
+    [ conditional noexcept specifier:]
+      ex:
+      void func(int)noexcept( 10 > 5 );  // noexcept if the expression is true (compile time)
+      void func(int)noexcept( sizeof(int) > 8 );  // noexcept if the expression is true (compile time)
+
+    * noexcept operatoru:
+
+      noexcept(std::cout << 10)
+
+      noexcept(func(10))
+
+      void func(int)
+      constexpr auto b = except(func(10));  // false
+
+      void func(int) noexcept
+      constexpr auto b = except(func(10));  // true 
+
+## tempate move constructable
+
+## overload un parcasi olamaz
+
+--------
+old style
+void func(int)throw(std::bad_alloc);  // sadece bad alloc gonderebilir
+void func(int)throw(std::bad_alloc);  // sadece bad alloc gonderebilir
+-----------------------------------------------------------------------
+
+# dtor always has nothrow
+
+  is_nothrow_default_constructible
+  ....
+
+# :wq
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

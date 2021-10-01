@@ -1,0 +1,505 @@
+# auto&&, i
+
+# proxy class
+    -> vector<bool>, bir proxy class kullanir
+
+    fill ex:
+
+    template<tpename C, typename T>
+    void fill(C& con, const T& val)
+    {
+        for (auto& elem : con)  // error, because of the proxy class
+            elem = val;
+    }
+
+    int main()
+    {
+        std::vector<int> ivec(20);
+        fille(ivec, 10);     // ok
+        
+        std::vector<bool> ivec(20);
+        fill(bvec, true);   // error
+
+    }
+   
+    instead do this:
+
+
+    template<tpename C, typename T>
+    void fill(C& con, const T& val)
+    {
+        for(auto&& elem: con)
+            elem = val;
+    }
+
+========================================================================
+# auto r&&
+   -> ilk deger R-val, L-val ok
+
+    ex:
+        auto&& a = 10; //ok
+
+##
+
+    foo()
+        -> L-val&
+        -> R-val&
+        -> const L-val&
+        -> val
+
+    func(foo());
+
+
+    ex:
+
+        class Nec{};
+
+        Nec retval()
+        {
+            return ;
+        }
+        
+        Nec& retlref(Nec& r);
+        {
+           return r; 
+        }
+
+        const Nec& retconstlref(const Nec& r);
+        {
+           return r; 
+        }
+
+        Nec&& retrref(Nec x)
+        {
+            return std::move(x);
+        }
+
+        
+        // 1
+        void foo(Nec&)
+        {
+            std::cout << "foo(Nec&)\n";
+        }
+        
+        // 2
+        void foo(const Nec&)
+        {
+            std::cout << "foo(const Nec&)\n";
+        }
+        
+        // 3
+        void foo(Nec&&)
+        {
+            std::cout << "foo(Nec&&)\n";
+        }
+
+
+        int main()
+        {
+            Nec x;
+
+
+            // perfect forwarding: these protects val-cat and const ness
+            foo(retlref(x));        // 1
+            
+            foo(retconstlref(x));   // 2
+            
+            foo(retval());          // 3
+
+
+            // lets say we hold the retrun val of a gunction in a variabkle
+            // then we call foo(), can we still have perfect forwarding?
+            // use universal reference (auto&&) and std::forward
+            
+            auto&&r = retconstlref(x);
+            foo(std::forward<decltype(r)>(r));  // 2 
+
+            auto&&r = retval(x);
+            foo(std::forward<decltype(r)>(r));  // 3 
+
+        }
+
+
+# decltype(auto)
+  - depending return type can be 
+        ref or not, 
+        const or not, 
+        R-val or L-val
+
+    ex:
+        template<typename Func, typename ...Args>
+        decltype<auto> call(Func f, Args&& ...args)
+        {
+            return f(std::forward<Args>(args)...);
+        }
+
+        // return type auto olursa type deduction da ref lik ve const luk korunmaz
+        // auto&  -> always L-val& (f R-val oldugunda syntax error)
+        // auto&& -> either L-val&, or R-val& 
+                    yani return type string => (her zaman) string&
+                    return type: val => undefined behaviour
+
+
+    ex:
+
+        int foo()
+        {
+            int x {10};
+            retunr x;
+        }
+
+        int func()
+            return foo()
+
+        int func()
+            return foo()
+
+
+        int main
+
+            auto& a = foo();        // ok
+
+            const int& r = func();  // ok
+
+
+        ?? buraya video dan bak
+
+## 
+    decltype(name) rules
+    -> isim -> type T
+    decltype(expression)
+        expression val cat:
+        Pr val  T???
+        L Rval  T&
+        X val   T&&
+
+    => ref lik ve const luk dwi korunutdusmez
+
+
+    int&& foo();
+    int main()
+    {
+        int x = 5;
+        decltype(auto) y = x;   // type: int
+
+        decltype(auto) y = 5;   // type: int&&
+        
+        decltype(auto) y = (x);   // type: int&
+
+
+        const intzx = 5;
+        decltype(auto)
+    }
+
+    ???
+
+
+    int
+
+
+## decltype auto
+
+    int&& foo();
+    
+    int foo2();
+
+    int x;
+
+    decltype(auto) func()
+    {
+        return 19;  // ret type: int
+        
+        return foo();  // ret type: int&&
+        
+        return foo2();  // ret type: int
+
+        return x;   // ??
+        
+        return (x); // int&
+    }
+
+## for perfect forwarding
+
+    ex:
+        class Myclass {};
+
+        template<typename T>
+        decltype(auto) func(T x)
+        {
+            return foo(x);
+        }
+
+         foo     expression   func
+         L-val&                 L-val&
+         type                   type (ex: string)
+         R-val     X-val        R-val
+
+# lambda
+
+    auto f = [](auto func, auto&& ...args) -> decltype(auto)
+      ??? ...
+
+# iperfect forwarding cases
+
+    template<typename Func, typenmae ...Args>
+    decltype(auto) call(Func f, Args ...args)
+    {
+        return f(std::forward<Args>(args)...);
+    }
+
+
+    template<typename Func, typenmae ...Args>
+    decltype(auto) call(Func f, Args ...args)
+    {
+        decltype(auto) retval = f(std::forward<Args>(args)...);
+        
+        if constexpr(std::is_rvalue_reference_v<decltype(ret)>) {
+            return std::move(retval);
+        }
+        else {
+            // either val type or L-val&
+            return retval;
+        }
+    }
+
+    Yukarida neden std::move kullandik?
+    -> return retval;   // isim formunda L-val
+    -> return (retval); // L-value expression olacak
+
+    std::forward dezavantajlarini burada henuz gostermedi
+    Jossetis in kitabina bak
+
+# ???
+    -> burada bir sorunun cevabi var
+
+================================================================
+# std::move_if_noexcept
+
+    -> arguman sinifin move fonksiyonu no except ise std::move yap
+       degilse copy ctor 
+
+================================================================
+# containers except std::array
+  -> move ctor/assignment : constant time O(1)
+  -> copy ctor/assignment : 
+
+## moved-from state
+   tasinmis durumunda olan bir vector bostur.
+   diger container lar icin bu bir zorunluluk degil, ama pratikte onlar da bos olur
+
+
+## move assignment nasil calisir?
+
+    x = y; 
+
+    once x in elemanlari destroy edilir 
+    sonra y elemanlari tasinir
+
+## insert, push_back/front
+    -> ??? overload
+
+    X val   T&&
+
+
+## emplace_X
+    - perfect forwarding
+    
+
+
+## 
+
+    A) fonk. geri donus degeri container yapilabilir
+    B) eleman eklerken move yaparsak tasima semantiginden faydalanabilirz
+
+    ex:
+
+        while(ifs >> str)
+            vec.push_back(std::move(str));
+
+
+# move only type
+  - unique ptr, iostream, thread, future
+
+    -> neden kopyalamaya kapatilmis?
+       kopyalamanin cok anlami yok, varlik nedeni ile ilgili
+       unique ptr <- kaynagi gosteren tek pointer
+       thread     <- kopyalanmamali
+
+    -> eski C++ da container a koymanin yolu kopyalamak dan gecerdi
+   
+
+    ex:
+        using usptr = std::unique_ptr<std::string>;
+
+        void sink(usptr uptr)
+        {
+            // kaynagi alinan uptr destroy edilecek?
+        }
+
+        void sink2(usptr&& uptr)
+        {
+            // uptr nin kaynaginin alinmalis body icerisinde yazilacak koda bagli
+        }
+
+        int main()
+        {
+            using namespace std;
+
+            usptr ptr;  // ok, default initialized
+
+            // ptr kaynaga sahip mi?
+            if(ptr) { ... }
+            std::cout << (ptr ? "dolu" : "bos");
+            if(ptr != nullptr) { ... }
+
+            // move semantic
+
+            make_unique<std::string>("necati ergin");
+
+            sink(uptr); // syntax error
+
+            sink(std::move(uptr));
+
+            x = std::move(y);    //once x kaynagini birakir, sinra y nin kaynagini alir
+
+
+        }
+
+
+## ???
+	ex:
+		usptr func()
+		{
+			std::unique_ptr<std::string> uptr{new std::string("alican")};
+			
+			return uptr; 	// uptr: L-value expression
+                            // ama burada L-value dan move only nesneye donusum var
+						    // burada std::move kullanmaya gerek yok
+		}
+
+	ex:
+
+	void func(usptr x)
+
+	usptr up;
+
+	func(make_unique<string>("asli"));	// zaren R-val, it is ok
+
+	func(usptr x)
+    ....
+
+## Dikkat: move only siniflarin kisitlamari
+    -> initizlaier list kullanamayiz???
+
+		ex:
+		  	unique_ptr<string> x, y, z;
+			???
+
+
+## sorular
+
+# 
+
+	ex:
+	...
+
+
+		for(auto up : vec) {
+
+		}
+
+...
+
+
+# make_move_iterator
+
+	....
+
+# copy/move
+  move_backward/copy_backward
+
+...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

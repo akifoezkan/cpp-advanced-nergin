@@ -1,0 +1,798 @@
+missed first 35 mins
+
+================================ lambda ===========================
+# lambda
+
+    [] <typename T> () -> type mutable/constexpr/noexcept {kod}
+
+
+## derleyicinin yazdigi kod const??
+
+    - constexpr default
+        * constexpr yazmasak da fonksiyonun kodu constexpr kosullarini sagliyorsa 
+          closure class zaten const
+        * constexpr yazilip, const function yazilmazsa error
+
+    - noexcept default degil
+
+    - <typename T> => c++20
+
+# ilk lambda kod ornek
+
+    ex:
+        [](){} ();      // valid: lambda expression, operator
+
+    ((((([](){})))))(); // valid: (( fonksiyon ana block ))
+
+    => popular talk: immediately invoked constexpr videpo?
+
+    ex:
+        cout << [](int x) {
+            return x * x + 5;
+        }() ???
+
+# lambda isimlendirme
+    ex:
+        auto f = [](int x) {
+                return x * x + 5;
+            };
+
+        f(20);
+
+        std::cout << f(10) << "\n";
+        std::cout << f(20) << "\n";
+
+
+        std::invoke(f, 10);
+
+# C++20 ile stateless lambdalarin default ctor lari ve copy assignmenti var
+  oncesinde bunlar delete edilmisti
+    ex:
+        // c++20
+
+        auto f = [](int x) {
+                return x * x + 5;
+            };
+
+        decltype(f) x;  // Ok, C++20, cunku default ctor var
+
+
+        std::cout << typeid(decltype(f)).name() << "\n";  // string derleyiciye bagli
+
+# lambda decltyoe olarak kullanilabilir, niye?????
+
+
+#
+    ex:
+        // bu lambdalarin type lari birbirinden farkli
+        auto f1 = []{ return 1;};
+        auto f2 = []{ return 1;};
+        auto f3 = []{ return 1;};
+
+        // is_same
+        constexpr auto b = is_same_v<decltype(f1), decltype(f2)>;
+
+        // typeid ile olusan type info lari karsilastirabiliriz
+
+# lambda std:function
+    ex:
+        function<int(int)> f []() ...
+
+# lambda bir fonksiyona arguman olarak gonderilebilir
+    -> parametre std::function yada
+    -> function template
+
+  en cok lambda kullanilan seneryo STL algoritmalarina arguman olarak
+  gonderilmesi
+
+# i???? kod optimizasyon, inline expansion
+
+
+#
+    ex:
+        vector<string> svec;
+        rfill(svec, 100, rname);
+        print(svec);
+
+        // sirf bu fonksiyon icin namespace de yeni bir lambda yazmaya gerek yok
+        find_if(svec.begin(), svec.end(), 
+            [](const std::string& s){ return s.length() == 5; });   
+
+
+        if (auto iter = find_if(svec.begin(), svec.end(), 
+            [](const std::string& s){ return s.length() == 5; }); iter != svec.end()) {
+                std::cout << *iter << " " << distance(svec.begin(), iter) << "indexli eleman\n";
+        }
+        else {
+            std::cout << "bulunamadi";
+        }
+        
+
+    ex:
+        size_t len;
+        cin >> len;
+        
+        if (auto iter = find_if(svec.begin(), svec.end(), 
+            [ilen](const std::string& s){ return s.length() == len; }); iter != svec.end()) {
+                std::cout << *iter << " " << distance(svec.begin(), iter) << "indexli eleman\n";
+        }
+        else {
+            std::cout << "bulunamadi";
+        }
+
+
+# lambda fonksiyona arguman olarak gonderilebilir
+    - std::function
+    - template function
+
+
+# unevaluated context de lambda kullanabilirs: c++20???    
+
+====================================================================
+# soru: find_if(vec.begin(), {}, ...); // why this works?
+class Myclass {
+public:
+    Myclass(int);
+    Myclass();
+}
+
+template<typename T>
+void func(T x, T y);
+
+int main()
+{
+    Myclass mx = 10;    // implicit conversion
+    Myclass mx = {};    // explicit conversion
+
+    Myclass m;
+
+    func(m, {});    // legal code
+}
+====================================================================
+
+
+# lambda can be used as
+    - unary predicate, binary predicate
+    ex:
+        vector<string> svec;
+        rfill(svec, 100, rname);
+        print(svec);
+
+        sort(svec.begin(), svec.end());     // default functor: std::less
+
+        sort(svec.begin(), svec.end(),      // binary predicate lambda
+            [](const string& s1, const string& s2) {
+                return s1.length() < s2.length() ||
+                       s1.length() == s2.length() &&
+                       s1 < s2;
+            });
+
+        generate(ivec.begin(), ivec.end(), []{ return rand() % 1000; });
+        
+
+# lambda ifadeleri bilesenleri
+    - tur "return" ifadesinden cikarilir (auto ile cikarim gibi)
+      ya da trailing return type
+
+    ex:
+        [](int x) { return x + 1; }
+        
+        [](int x)-> int { return x + 1; }   // trailing return type
+
+
+# neden trailing return type kullanilir
+    1. birden fazla tur var, ve bunlar birbirinden farkli
+
+        ex:
+            // error, trailing return type is required
+            [](int x){
+                if( x > 10)
+                    return 1;   // int;
+
+                return 2.3;     // double
+            }
+
+    2. geri donus turu auto kurallarina gore belirlenir
+       ancak auto (1) ref ness and (2) const ness i korumaz.
+
+        ex:
+            
+            int& foo();
+
+            int main()
+            {
+                auto f = []() {
+                    return foo();
+                };
+
+                f() = 10;   // error: f return type int
+                            //      despite foo return reference (int&)
+                            //      but auto does not sustain ref ness
+
+                auto f2 = []() -> decltype(auto) {
+                    return foo();
+                };
+
+                f2() = 10;  // ok, f2 return type int&
+
+            }
+
+========================== lambda capture ===================================
+# capture close
+    - lambda karsiligi derleyici local bir sinif yazar (closure class)
+    - capture class asagidaki gibi bir class yazdirmaya yarar (non static member vars)
+     
+   capture close Functor:
+        class Functor {
+        public:
+            Functor(int val) : mx{val} {};
+
+            // bu sinifa operator fonk yazsak
+
+            void operator()(int x)
+            {
+                // use mx 
+            }
+
+        private:
+            int mx; // nonstatic member function
+                    // either ref or not
+        }
+
+        
+# lambda ilgili namespace deki degiskenleri dogrudan kullanabilir.
+  Dolayisiyla bunlari capture etmeye kalktigimizda syntax error.
+
+    -> capture static parametre almaz cunlku onlar local class lara zaten visible
+
+    ex:
+        static int y = 5;
+
+        int main() {
+            int x = 5;
+            
+            static int x2 = 5;
+
+            class Myclass {
+                   void func()
+                   {
+                        x = 10; // error, x is not readable from here
+
+                        y = 10;    // ok 
+
+                        x2 = 10;   // ok
+                   }
+            };
+        
+        }
+
+    ex:
+        ???
+
+
+========================== lambda capture modes =============================
+
+# capture-by-copy
+    ex:
+        int main(){
+            int x = 10, y  =20;
+            double d = 5.6;
+
+            auto f = [] { return 1; };
+            std::cout << sizeof(decltype(f)) << "\n";   // 1
+
+            auto f = [x] { return 1; }; // capture-by-copy
+            std::cout << sizeof(decltype(f)) << "\n";   // 4
+
+            auto f = [x, y] { return 1; }; // capture-by-copy
+            std::cout << sizeof(decltype(f)) << "\n";   // 8
+
+            auto f = [x, y, z] { return 1; }; // capture-by-copy
+            std::cout << sizeof(decltype(f)) << "\n";   // 16 
+        }
+
+# capture by ref
+
+    derleyicinin soyle bir kod yazmasini istiyorum:
+
+    class Nec {
+        Nec(int &r) : mr{r} {}
+
+    private:
+        int &r;     // L-value ref, initialize edilmeli
+                    // bu yuzden default ctor u derleyiciye birakirsam error.,
+                    dolyisiyla deleted
+    };
+
+
+    o zaman
+
+        int main(){
+            int x = 10, y  =20;
+            double d = 5.6;
+
+            auto f = [&x] { x++; }; // x in baglandigi nesne degistiriyor
+                                    // ancak bir fonksiyon cagirisi yapilmali :)
+
+           f(); // x in degeri buirada artti
+           
+        }
+
+# capture edilen kod kullanilmasa da class icine alinir 
+
+    ex:
+        int x = 10, y=20;
+        double d = 5.6;
+
+         auto f = [x, y, z]() { }; // capture-by-copy
+         std::cout << sizeof(decltype(f)) << "\n";   // 16 
+
+# capture all by copy
+
+    ex:
+        auto f = [=]() { };
+        std::cout << sizeof(decltype(f)) << "\n";   // 1
+
+        auto f = [=]() { return x+y+d; };
+        std::cout << sizeof(decltype(f)) << "\n";   // 16 
+
+# capture all by ref
+
+    ex:
+        auto f = [&]() { ++x; ++y; d* 2.1; };
+        f();    // changes x, y, d;
+
+    ex:
+        auto f = [&]() { ++x; ++y; d* 2.1; };
+        f();    // changes x, y, d;
+
+    ex:
+        string str;
+        vector<string> ivec(10);
+
+        [&]() {
+            ivec.push_back(str);
+        }
+
+#
+
+    ex:
+        
+        class Biggie { /* big size class */ };
+
+        int main()
+        {
+            Biggie x;   
+
+            // ref yoluyla capture etmek istyorum ama
+            //  degistirmeye karsi onlem almak istyorum (const)
+
+            // nasil?
+            
+            auto f = [&x]() {
+            };
+
+        }
+
+
+# interview question:
+
+    -> ref ile capture etmek 
+       - kopyalama maliyetini dusurur
+       - degistirmemizi saglar
+
+    ex:
+        int main()
+        {
+            unique_ptr<int> uptr {new int(12)};
+
+            auot f = [uptr]() {
+                if(uptr)
+                    std::cout << *uptr << "\n"; // error,  move only sinif cannot be copied
+            }
+
+            auto f2 = [&uptr]() {
+                if(uptr)
+                    std::cout << *uptr << "\n"; // ok 
+            }
+        }
+
+    -> ref ile capture de dikkatli olmaliyiz: dangling ref
+
+    ex:
+        
+        auto func(int x)
+        {
+            return [x](int a ) { return a * x; };
+        }
+
+        auto func2(int x)
+        {
+            return [&x](int a ) { return a * x; };  // capture by ref
+                                                    // x bu fonksiyonun yerel degiskeni
+                                                    // ancak return edilen
+                                                    fonksiyon hayatta kalabilir
+        }
+
+
+        int main()
+        {
+            auto f = func(12);
+
+            std::cout << "f(20) = " << f(20) << "\n";
+        }
+
+# default capture mode, diger nesneler farkli capture mode    
+    ex:
+        int main()
+        {
+            int x{}, y{}, z{};
+            auto f = [=, &x] () {};
+        }
+
+# lambda init capture (c++14)
+
+    ex:
+        int x;
+        [a = x + 5] () {}
+
+## name lookup
+    ex:
+        int x;
+        [x = x] () {}   // ok, normal fonksiyonlar da izin yok 
+
+        [x = x + 5] () {} //ok
+
+    => en cok kullanildigi yer, move only class lari tasimak
+
+## tasima yoluyla elemanlari lambda icine tasimak
+    ex:
+        unique_ptr<int> up { new int{76} };
+
+        [up](){};           // error, copy
+        [&up](){};          // refereans
+        [up = move(up)] {}; //tasima
+
+    ex:
+        unique_ptr<int> up { new int{76} };
+        auto f = [up = move(up)] () {
+            if (up)
+                std::cout << *up << "\n";
+        };
+
+        cout << (up ? "dolu" : "bos") << "\n";  // bos: note that the function is not called yet
+        f();
+
+     Note:
+        yukaridaki kod ile bu ayni degil 
+
+        ...
+
+# soru:
+    ex:
+        const int x =19
+        [x]()   // buradaki x const dur
+
+# soru:
+    asagida a pointer mi?
+    array decay var mi?
+  cevap:
+    hayir
+
+    int a[10]{};
+
+    auto f = [a]() mutable {    
+        a = nullptr;            // a pointer degil, bu yuzden bu hata
+    };
+
+    ex:
+        int a[10]{};
+
+        // bu duurmda decay yok 
+        auto f = [a]() mutable {    
+            cout << is_pointer_v<decltype(a)> << "\n";  // false
+            cout << is_array_y<decltype(a)> << "\n";    // ok
+
+            cout << typeid(a).name << "\n";
+        };
+
+# soru:
+    ex:
+        int a[10]{};
+
+        // bu duurmda decay var
+        auto f = [a = a]() mutable {    
+            cout << is_pointer_v<decltype(a)> << "\n";  // ok 
+            cout << is_array_y<decltype(a)> << "\n";    // false 
+
+            cout << typeid(a).name << "\n";
+        };
+
+
+#============= mutable keyword in lambdai???
+# ex:
+    class Myclass {
+    private:
+        mutable int mx;     // anlami: const uye fonksiyonlar bunu degistirebilir
+    };
+
+
+  ex:
+    int x = 120;
+
+    [x]() mutable {};       // uye fonksiyonlar const olmasin
+                            // (yukaridaki mutable anlamindan farkli)
+
+  => nerede kullanilir?
+
+  ex:
+    class Gen {
+    public:
+        int generate();
+    };
+
+    int main()
+    {
+        Gen generatorl
+
+        auto f = [generator]() {
+            auto x = generator.generatr();  // errro, func const
+        }
+
+        auto f = [generator]() mutable {
+            auto x = generator.generatr();  // ok 
+        }
+    }
+
+  ex:
+    int x = 10;
+
+    auto f = [x](int a) mutable {x *= a; }
+
+    f(20);
+    std::cout << "x = " << x << \n";    // x = 10
+
+
+  ex:
+    class Myclass {
+    public:
+        void foo() const
+        {
+            ptr = nullptr;  // errpor, sininfin veri elemani degisir
+
+            *ptr = 20;      // ok, siningn veri elemani degismez
+
+            r = 56;         // ok
+            
+        }
+
+    private:
+        int* ptr;
+
+        int& r;
+    }
+
+    int x = 10;
+    auto f = [&x](int a ) {x *= a}; // ok
+
+# soru
+ex:
+    const int x = 10;
+
+    auto f = [x]() mutable { x++; } // sinifin veri elemani (x) const
+
+    // su kodu gen eder
+    class Nec {
+    public:
+        void foo()
+        {
+            x = 5; // syntax error
+        }
+
+    private:
+        const int x;
+    }
+
+===================== constexpr in lambda
+# lambda default olarak constexpr, 
+  eger kodu const olma kurallarini cignemiyorsa
+
+  ex:
+        constexpr int foo(int x)
+        {
+            ++x;
+
+            return x;
+        }
+
+kurallar
+- static variable olusturamazsin, constexpr icinde
+    ex:
+        constexpr int foo(int x)
+        {
+            static int ival = 0;    // error,  
+
+            return x;
+        }
+
+- constexpr icin:
+  fonksiyon, parametre, geri donus turu, yerel degiskenlerin literal type olmasi gerekir
+
+    ex:
+        class Nec {
+        public:
+            Nec() {}
+            int get() const;
+        };
+
+        constexpr int foo(int x)
+        {
+            Nec mynec;
+
+            return x + mynec.get(); // eror 
+        }
+
+    ex:
+        // literal type
+        class Nec2 {
+        public:
+            int get() const;
+        };
+
+        // literal type
+        class Nec3 {
+        public:
+            Nec = defualt
+            int get() const;
+        };
+
+        constexpr int foo(int x)
+        {
+            Nec2 mynec2;
+            Nec3 mynec3;
+
+            return x + mynec2.get(); // ok 
+        }
+
+# 
+ex:
+    auto f = [](int x) {return x + 5};  // constexpr
+    constexpr auto val = f(12); // ok
+
+=> yinede constexpr keyword yazmasi iyi
+   cunku constexpr olma hatasi cinenirse sentax hatasi aliriz
+
+# constexpr examples:
+
+    ex:
+        int main()
+        {
+            // bu functionlarin hepsinin operator() u constexpr
+
+            auto fsum = [](int x, int y) {
+                auto left  = [=] { return x; }
+                auto right = [=] { return y; }
+
+                return [=]{ return left() + right(); };
+            };
+
+            constexpr auto n = fsum(10, 20)();  // constexpr, compiletime: 30
+        }
+
+====== sinifin uye fonksiyonu icinde lambda ifadesi kullanilmasi ============
+
+# this anahtar sozcugu lamda icinde ozel bir anlami var
+pointer: lambda icin izin verilmemis
+   -> bu sayede this ptr icin daha anlamli bir kullanim alani olusturulmus
+
+    ex:
+        int main()
+        {
+            int x = 10;
+            auto f = [x]() {
+                x;   // sinifin non static uye elemani
+
+                auto a = this->x;   // syntax error
+            }
+        }
+
+# 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
