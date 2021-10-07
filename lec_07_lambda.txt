@@ -1,35 +1,47 @@
-missed first 35 mins
-
+missed first 25 mins
 ================================ lambda ===========================
+# lambda expression
+    -> compiler, closure type (sinif) turunden bir PR-value expression olusturur
+
+## compiler closure type icin sunlari yazar:
+    duruma gore,
+    -> ctors: default/copy/move ...
+    -> typecast tur donusturme operator fonksiyonu: 
+        ilgili sinif -> function pointer
+
 # lambda
 
-    [] <typename T> () -> type mutable/constexpr/noexcept {kod}
+    [] <typename T> () -> type/mutable/constexpr/noexcept {kod}
 
+    - [] -> capture block/lambda introducer
+    - () -> parameters 
+            su durumda omit edilebilir: 
+            niteleyiciler, eg mutable yoksa ve parametre yoksa )
+    - <typename> -> c++20 
 
-## derleyicinin yazdigi kod const??
+## derleyicinin yazdigi Functor class in operator fonksiyonu ***const***
+   bu yuzden closure type in veri elemanlari varsa
+   a) bunlari degistiremiyoruz
+   b) veri elemanlarinin nonconst uye fonksiyonlarini cagiramayiz
 
-    - constexpr default
-        * constexpr yazmasak da fonksiyonun kodu constexpr kosullarini sagliyorsa 
-          closure class zaten const
-        * constexpr yazilip, const function yazilmazsa error
+## constexpr is default
+    - lambda fonk. kodu constexpr kosullarini sagliyorsa closure type zaten constexpr
+    => constexpr keyword u yazilmasina ragmen, kosullar saglanmazsa syntax error
 
-    - noexcept default degil
+## noexcept is not default
 
-    - <typename T> => c++20
-
-# ilk lambda kod ornek
-
+## first examples:
     ex:
         [](){} ();      // valid: lambda expression, operator
 
     ((((([](){})))))(); // valid: (( fonksiyon ana block ))
 
-    => popular talk: immediately invoked constexpr videpo?
+    => popular talk: immediately invoked function expression (IIFE/IILE) 
 
     ex:
         cout << [](int x) {
             return x * x + 5;
-        }() ???
+        }(10)
 
 # lambda isimlendirme
     ex:
@@ -38,12 +50,10 @@ missed first 35 mins
             };
 
         f(20);
+        std::invoke(f, 10);
 
         std::cout << f(10) << "\n";
         std::cout << f(20) << "\n";
-
-
-        std::invoke(f, 10);
 
 # C++20 ile stateless lambdalarin default ctor lari ve copy assignmenti var
   oncesinde bunlar delete edilmisti
@@ -54,15 +64,17 @@ missed first 35 mins
                 return x * x + 5;
             };
 
-        decltype(f) x;  // Ok, C++20, cunku default ctor var
+        decltype(f) x;  // C++20, ok: stateless lambdas have default ctor
+                        // C++17, error: default ctor is deleted
+
+        std::cout << typeid(decltype(f)).name() << "\n";
 
 
-        std::cout << typeid(decltype(f)).name() << "\n";  // string derleyiciye bagli
+# c++20 sonrasi, lambda ifadeleri unevaluated context icinde kullanilabilir
+    ex:
+        decltype([](int x) { return x * x + 5; })   // legal
 
-# lambda decltyoe olarak kullanilabilir, niye?????
-
-
-#
+# ozdes lambdalar icin bile derleyici farkli siniflar olusturmak zorunda
     ex:
         // bu lambdalarin type lari birbirinden farkli
         auto f1 = []{ return 1;};
@@ -76,19 +88,15 @@ missed first 35 mins
 
 # lambda std:function
     ex:
-        function<int(int)> f []() ...
+        function<int(int)> f = [](int) { return x * x; }
 
 # lambda bir fonksiyona arguman olarak gonderilebilir
     -> parametre std::function yada
     -> function template
 
-  en cok lambda kullanilan seneryo STL algoritmalarina arguman olarak
-  gonderilmesi
+    en cok lambda kullanilan seneryo STL algoritmalarina arguman olarak
+    gonderilmesi
 
-# i???? kod optimizasyon, inline expansion
-
-
-#
     ex:
         vector<string> svec;
         rfill(svec, 100, rname);
@@ -98,15 +106,14 @@ missed first 35 mins
         find_if(svec.begin(), svec.end(), 
             [](const std::string& s){ return s.length() == 5; });   
 
-
         if (auto iter = find_if(svec.begin(), svec.end(), 
-            [](const std::string& s){ return s.length() == 5; }); iter != svec.end()) {
+            [](const std::string& s){ return s.length() == 5; });
+            iter != svec.end()) {
                 std::cout << *iter << " " << distance(svec.begin(), iter) << "indexli eleman\n";
         }
         else {
             std::cout << "bulunamadi";
         }
-        
 
     ex:
         size_t len;
@@ -120,39 +127,33 @@ missed first 35 mins
             std::cout << "bulunamadi";
         }
 
-
-# lambda fonksiyona arguman olarak gonderilebilir
-    - std::function
-    - template function
-
-
-# unevaluated context de lambda kullanabilirs: c++20???    
-
 ====================================================================
+time: 1h13s
 # soru: find_if(vec.begin(), {}, ...); // why this works?
-class Myclass {
-public:
-    Myclass(int);
-    Myclass();
-}
 
-template<typename T>
-void func(T x, T y);
-
-int main()
-{
-    Myclass mx = 10;    // implicit conversion
-    Myclass mx = {};    // explicit conversion
-
-    Myclass m;
-
-    func(m, {});    // legal code
-}
+    class Myclass {
+    public:
+        Myclass(int);   // not explicit
+        Myclass();
+    }
+    
+    template<typename T>
+    void func(T x, T y);
+    
+    int main()
+    {
+        Myclass mx = 10;    // implicit conversion, int -> Myclass{int}
+        Myclass mx = {};    // implicit conversion, {}  -> Myclass{}
+    
+        Myclass m;
+    
+        func(m, {});    // legal code
+    }
 ====================================================================
-
 
 # lambda can be used as
     - unary predicate, binary predicate
+
     ex:
         vector<string> svec;
         rfill(svec, 100, rname);
@@ -168,19 +169,19 @@ int main()
             });
 
         generate(ivec.begin(), ivec.end(), []{ return rand() % 1000; });
-        
 
-# lambda ifadeleri bilesenleri
-    - tur "return" ifadesinden cikarilir (auto ile cikarim gibi)
-      ya da trailing return type
+============== lambda trailing return type ===================
+# lambda ifadeleri bilesenleri       
+# tur "return" ifadesinden cikarilir (auto ile cikarim gibi)
+  ya da trailing return type
 
     ex:
         [](int x) { return x + 1; }
         
         [](int x)-> int { return x + 1; }   // trailing return type
 
-
-# neden trailing return type kullanilir
+# neden trailing return type kullanilir? 
+    tur cikarimi 1) yapilamiyorsa veya 2) benim istedigim gibi yapilmiyorsa
     1. birden fazla tur var, ve bunlar birbirinden farkli
 
         ex:
@@ -193,7 +194,7 @@ int main()
             }
 
     2. geri donus turu auto kurallarina gore belirlenir
-       ancak auto (1) ref ness and (2) const ness i korumaz.
+       ancak auto (1) referansligi ve (2) constlugu korumaz.
 
         ex:
             
@@ -207,27 +208,24 @@ int main()
 
                 f() = 10;   // error: f return type int
                             //      despite foo return reference (int&)
-                            //      but auto does not sustain ref ness
+                            //      but auto ignores ref ness
 
                 auto f2 = []() -> decltype(auto) {
                     return foo();
                 };
 
                 f2() = 10;  // ok, f2 return type int&
-
             }
 
 ========================== lambda capture ===================================
 # capture close
-    - lambda karsiligi derleyici local bir sinif yazar (closure class)
+    - derleyici, lambda karsiligi local bir sinif yazar (closure class)
     - capture class asagidaki gibi bir class yazdirmaya yarar (non static member vars)
      
    capture close Functor:
         class Functor {
         public:
             Functor(int val) : mx{val} {};
-
-            // bu sinifa operator fonk yazsak
 
             void operator()(int x)
             {
@@ -241,12 +239,12 @@ int main()
 
         
 # lambda ilgili namespace deki degiskenleri dogrudan kullanabilir.
-  Dolayisiyla bunlari capture etmeye kalktigimizda syntax error.
-
-    -> capture static parametre almaz cunlku onlar local class lara zaten visible
+  => Dolayisiyla bunlari (e.g., global variables, static variables) 
+     capture etmeye kalktigimizda syntax error.
+     (Bunlar local class lara zaten visible)
 
     ex:
-        static int y = 5;
+        int y = 5;
 
         int main() {
             int x = 5;
@@ -267,15 +265,27 @@ int main()
         }
 
     ex:
-        ???
+       int x = 10;
 
+       int main()
+       {
+            static int y = 9;
+            int z = 5;
+
+            auto f0 = [](int a ) { return x + 5; }   //  ok
+            auto f1 = [](int a ) { return y + 5; }   //  ok
+            auto f2 = [](int a ) { return z + 5; }   //  error 
+
+            auto f3 = [](int a ) { cout << a << "\n"; }   // ok, cout global 
+       }
 
 ========================== lambda capture modes =============================
-
+akif
 # capture-by-copy
+  -> capture edilen her variable icin closure class icin local bir variable olusturulur
     ex:
         int main(){
-            int x = 10, y  =20;
+            int x = 10, y = 20;
             double d = 5.6;
 
             auto f = [] { return 1; };

@@ -1,0 +1,23 @@
+time: 1h13s
+# soru: find_if(vec.begin(), {}, ...); // why this works?
+
+    class Myclass {
+    public:
+        Myclass(int);   // not explicit
+        Myclass();
+    }
+    
+    template<typename T>
+    void func(T x, T y);
+    
+    int main()
+    {
+        Myclass mx = 10;    // implicit conversion, int -> Myclass{int}
+        Myclass mx = {};    // implicit conversion, {}  -> Myclass{}
+    
+        Myclass m;
+    
+        func(m, {});    // legal code
+    }
+
+====================================================================
