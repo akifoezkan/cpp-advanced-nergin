@@ -1,0 +1,226 @@
+# Reminder: c++20 eklemeleri
+   - stateless lamda: default ctor, copyable
+   - unevaluated context de lambda ifadelerinin kullanilabilmesi
+
+  ex:
+    main()
+    {
+        using gset = set<string, decltype([](const string& s1, const string& s2){ return s1 > s2; })>; 
+
+		gset set1;
+	    rfill(set1, 10, rname);        
+        print(set1);
+
+        using lenset = set<string, decltype([](const string& s1, const string& s2) { return s1.length() > s2.length(); })>; 
+		lenset set2;
+	    rfill(set2, 5, rname);        
+        print(set2);
+
+        using absset = set<int, decltype([](int x, int y) { return abs(x) > abs(y); })>; 
+		absset set3{-5, -9, -2, 6, ...};
+        print(set3);
+    }
+
+==================== templated lambda ===============================
+# c++20: auto yerine template syntax kullanimi eklendi
+
+# template lambda nin generalized lambda (auto kullanimi) karsisinda avantajlari 
+    - yazma kolayligi
+    - template metaprogramming ile parametre type lari daha concise belirlenebilir 
+  
+[yazim kolayligi]
+## eski syntax
+
+  ex:
+    auto f = [](const auto& vals) {
+        // auto ya karsilik gelen turu ogrenmek istersek
+        // decay_t ile refereanslik/constluk cikarmamiz gerekir
+
+        using V = decay_t<decltype(vals)>;  // V: auto ya karsilik gelen tur
+        using T = typename V::value_type;   // typename cunku template a bagli 
+                                            // bir tur kullaniyoruz
+        T::foo();
+    } 
+
+## yeni syntax
+
+  ex:
+    // avantajar
+    // - bu function'i sadece vector<T> turunden input lar icin kisitladik
+    // - vector de kullanilan tur T yi dogrudan kullanabiliriz, (type traitler gerek kalmadan)
+    
+    auto f = [] <typename T>(const std::vector<T>& vals) {
+        T x{};
+        T::foo();
+    } 
+
+
+[2.avantaj]
+## eski syntax bazi seneryolar
+
+- parametre cikarimi yok
+
+  ex:
+    auto f1 = [](int x, int y) { return x + y; }; 
+    
+    f1(12, 34);
+    f1(12, 3.4);    // double da gonderilebilir, implicit olarak int e donusturulecek turler
+
+
+- her iki parametre icin ayri ayri tur cikarimi var
+
+  ex:
+    auto f2 = [](auto x, auto y) { return x + y;};
+    
+    f2(1, 3.4);     // bu turler icin toplama gecerli degilse syntax error
+
+
+- 2.parametre icin 1.parametrenin turunu kullan:
+
+  ex:
+    auto f2 = [](auto x, decltype(x) y) { return x + y;};
+    
+    f3(1.2, 8);         // iki tur de double
+    f3(1,2, "akif");    // error
+
+
+
+## yeni syntax, c++20, templated lambda
+
+- turlerin ayni olmasini zorla
+
+  ex:
+      auto f2 = []<typename T> (T x, T y) { return x + y;};
+
+      auto n = f4(12, 56);        // ok
+      auto n = f4(5.6, 2.3);      // ok
+      auto n = f4(5.6, 2.3f);     // error 
+
+- array type tanimla
+
+  ex:
+      auto f = [] <typename T, int n> ( T(&ra)[n] ) {
+          for (auto& x : r)
+              ++x;
+      };
+
+      int a[]{1, 4, 7, ..};
+      f(a);
+
+      for(int i : a)
+          std::cout << i << " ";
+
+- concise description of a container and type
+
+  ex:
+      auto f = []<typename T>(std::vector<T>& x, const T& tval)
+      {
+          x.push_back(tval);
+      };
+
+      vector<int> ivec;
+
+      f(ivec, 12);    // ok
+      f(ivec, 1.2);   // error
+
+
+
+======= [perfect forwarding, yazim kolayligi]
+## eski syntax, auto&&
+
+    ex:
+        auto f = [](auto&& ...args) {
+            func(std::forward<decltype(args)>(args)...);
+        }
+
+## yeni syntax, templated lambda
+    ex:
+        auto f = []<typename ...Args>(Args&& ...args) {
+            func(std::forward<Args>(args)...);
+        }
+
+
+=================== explicit type for templated lambda====================
+# Soru: Is it possible to define an explicit type for lambda operator?
+    - lambda expression is a class (closure type)
+
+  ex:
+    auto f = [](int x) { return x + 5; } 
+    
+    f(12);                          // ok
+    auto val = f.operator()(12);    // ok
+    
+    
+    auto f = []<typename T>(T x) { return x+5; };
+    
+    f<int>(12);             // not legal, f is a class type
+    f.operator()<int>(16);  // legal
+
+
+
+==============================================
+ # lambda icinde parametre paketini capture etmek
+    ex:
+        delay_invoke, resme bak
+
+    ex:
+        delay invaoke, move()
+
+        workaround:
+            args.. i make_tuple ile yakala
+
+            std::make_tuple(std::move(args)...)]() -> decltype(auto)
+                return std::apply(f, tup);
+
+     eX:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

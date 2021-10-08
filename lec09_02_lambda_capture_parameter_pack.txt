@@ -1,0 +1,140 @@
+=========== lambda icinde parametre paketini capture etmek =========
+
+=> you can simply investigate the code example: 
+    lec09_lambda_lazy_evaluation.cpp
+
+
+# lazy evaluation example: 
+
+  ex:
+    #include <functional>
+    
+    int foo(int x, int y, int z)
+    {
+        std::cout << x << " " << y << " " << z << "\n";
+        std::cout << "foo is called\n";
+        return x + y + z;
+    }
+    
+    template<typename F, typename ...Args>
+    auto delay_invoke(F f, Args... args)
+    {
+        return [f, args...]() -> decltype(auto) {
+            return std::invoke(f, args...);
+        };
+    }
+    
+    int main()
+    {
+        std::cout << "create f:\n";
+        auto f = delay_invoke(foo, 3, 5, 7);
+    
+        std::cout << "call f:\n";
+        f();
+
+        return 0;
+    }
+
+# yukaridaki kodda parameter pack args.. copy-by-value capture
+  Bu yuzden su kodla ayni ifade:
+
+  ex:
+    template<typename F, typename ...Args>
+    auto delay_invoke1(F f, Args... args)
+    {
+        return [=]() -> decltype(auto) {
+            return std::invoke(f, args...);
+        };
+    }
+
+=====
+# parameter pack i move veya forward etmek icin c++20 oncesi bir syntax yok
+
+## su kod gecersiz:
+
+  ex:
+    template<typename F, typename ...Args>
+    auto delay_invoke(F&& f, Args&&... args)
+    {
+        return [f = std::move(f), _args = std::move(args)...]() -> decltype(auto) {
+            return std::invoke(f, _args...);
+        };
+    }
+
+    // variable 'args' cannot be implicitly captured in a lambda with 
+    // no capture-default specified
+
+## c++20 oncesi work arounds: use tuple for wrapping parameter pack
+
+  ex:
+    template<typename F, typename ...Args>
+    auto delay_apply(F&& f, Args&&... args)
+    {
+        return [f = std::move(f), _args = std::make_tuple(std::move(args)...)]() -> decltype(auto) {
+            return std::apply(f, _args);
+        };
+    }
+    
+    template<typename F, typename ...Args>
+    auto delay_apply_forward(F&& f, Args&&... args)
+    {
+        return [f = std::forward<F>(f), _args = std::make_tuple(std::forward<Args>(args)...)]() -> decltype(auto) {
+            return std::apply(f, _args);
+        };
+    }
+
+
+## C++20 syntax for this task:
+
+  ex:
+    template<typename F, typename ...Args>
+    auto delay_call(F&& f, Args&&... args)
+    {
+        return [f = std::forward<F>(f), ..._args = std::forward<Args>(args)]() -> decltype(auto) {
+            return std::invoke(f, _args...);
+        };
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
