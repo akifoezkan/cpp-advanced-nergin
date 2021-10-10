@@ -1,0 +1,321 @@
+===================== string view =======================================
+# salt okuma amacali bir yazi alma
+
+    In C:
+        void func(const char *p)
+
+    In C++;
+        string view harici her secenegin bir dezavantaji var
+
+        void func(const std::string& x);
+            - bu fonksiyona herhangi bir yazi gecemem
+                 * ya bir string nesnesi
+                 * yada bir cstring kullanmak zorundayiz
+
+            yani:
+                func("nbla bla bla ");
+                
+                temporary materialization -> bir string nesnesi olusturulacak
+                ancak bu bir ilave maliyet
+
+        2) C deki gibi const char* kullanirsak
+            -> input olarak string gonderemeyiz.
+                str.cstr() ile bu fonksiyonu call edebiliriz
+
+            -> okuma amacla alacagim bu string icin herhangi bir API kullanmam
+
+        3) overloading yapilabilir
+            -> ancak bu da overkill, 
+               sirf bu amac icin birden fazla fonk. yazmak 
+
+    => diger bir problem, yazi string/cstring olmak zorunda degil
+
+        ex:
+            std::Array<char, 20>    => bir yazi tutabilir
+            
+            std::vector<char>       => bir yazi tutabilir
+
+# string view
+    - okuma amacli bir yaziyi, hangi formda olursa olsun dusuk maliyetle alir
+      (karakterler ardisik)
+    - string islemleri icin bir sinif interface ine sahip
+
+     => herhangi ardisik karakterler:
+
+            sercansatici
+              *   *
+             ptr 
+
+        string_view: yukaridaki gibi bir pointer + ardisik karakterleri, 
+                     salt okuma amaciyla wrap eden bir class
+
+## string_view, int dizilere de uygulanabilir
+   illa char ile sinirli olmak zorunda degil
+
+
+===========================
+# basics:
+
+## string_view is a very light class
+    - dolayisiyla string view sinifini kopyalamasi ucuz
+
+    #include<string_view>   //header
+
+    basic_string_view<char, ...>  //type
+
+    std::cout << sizeof(char*)       << "\n";    // 4
+    std::cout << sizeof(string_view) << "\n";    // 8, 2 pointer 
+                                                 //    yada  1 pointer + count
+
+
+## interview_question***
+    - dangling reference/pointer
+
+    => string_view is a non-owning reference
+        string_view nesnesi yazinin sahibi olmadigindan bu nesnenin
+        hayati bitti mi, hala valid mi bunu bilemez.
+
+## string_view nesnesi illa bir nesneye baglanmak zorunda degil
+
+    ex:
+        string_view sv;
+
+## functions (string deki fonksiyonlar)
+    at()
+    []
+    (c)begin
+    (c)end
+    back
+    compare     -> returns int
+    copy
+    data        -> sonunda NULL char olma garantisi yok
+    empty
+    end
+    start/ends_with     -> c_++20
+    find
+    find_first/last_(not)_of
+    front
+    npos
+    =operator
+    starts_with
+    substr       -> string sinifinda overkill, bunun yerine string view kullan
+    swap
+
+    Butun fonksiyonlar const, except
+    const olmayan 2 fonksiyon: bunlar gozlem araligini degistirir
+        remove_prefix/suffix
+
+## ex
+    string_view sv;
+    std::cout << boolalpha << sv.empty()
+
+    std::cout << sv.empty() << "\n";
+    std::cout << sv.size() << "\n";
+    std::cout << sv.length() << "\n";
+    std::cout << (sv.data() == nullptr) << "\n"
+
+    // out: true, 0, 0, true
+
+## yazdirma fonksiyonu, yazinin sonunda NULL char yoksa bile dogru sekilde yazi
+   yazdirir. Ancak string class da oldugu gibi NULL char eklemez
+
+  ex: (my example)
+    const char a[] = "akif";
+    std::string_view sv(a);
+
+    std::cout << sizeof(a) << "\n";     // 5, including NULL char in the end
+    std::cout << sv.size() << "\n";     // 4
+
+    std::string_view sv2(a, 2);
+    std::cout << sv2.size() << "\n";    // 2
+    std::cout << sv2 << "\n";           // ak
+    std::cout << sv2.data() << "\n";    // akif
+
+    // => string_view yazinin sonunda NULL char tutmak zorunda degil
+    //    operator<< fonksiyonu, sv objesinin sonunda NULL olsun olmasin dogru yazdirir.
+    //    .data() fonksiyonu NULL char gorene kadar yazdirir.
+
+## nelerle initialize edebilirim
+    - const char
+    - string
+    - data ctor
+    - range ctor
+    - ctor
+
+    ex:
+        char str[] = "necati ...";
+
+
+        string_view sv1(str);
+        string_view sv2(str + 2, str + 5);
+        string_view sv(str, 6);
+
+        cout << sv.size() << "\n";
+        cout << sv << "\n";     // yazinin sonunda NULL char olmak zorunda degil
+        cout << sv.data() << "\n";     // data() NULL char gorene kadar yazar 
+
+    
+    ex:
+        array<char, 5> ar {'a', 'h', 'm', 'e', 't'};
+
+        string_view sv{ar.data(), ar.size()};
+
+        cout << sv << "\n";
+        cout << sv.data() << "\n";  // undefined behaviour: 
+                                    // data const char* dondurur ancak sonunda
+                                    // NULL yok. non terminating 
+
+    ex:
+        string str{"gokhan zilanli"};
+        string_view sv{ str };
+
+        std::cout << "sv = " << sv << "\n";
+        cout << sv.size() << "\n";          // 14
+
+## range gtor
+    ex:
+        string str{"gokhan zilanli"};
+        string_view sv{ str.data(), 6 };
+
+    ex:
+        string str{"gokhan zilanli"};
+        string_view sv{str.data() + 8, str.data() + 11};
+
+## bir fonksiyon string_view parametreye sahipse, okuma amacli yazi bekliyor. 
+   String_view ctoruna gececegimiz butun parametreleri bu fonksiyona gecebiliriz. 
+
+    ex:
+        void func(std::string_view sw);
+
+        int main()
+        {
+            char str[]{"necati ergin"};
+            func("bitcoin rises");
+
+            string sx = {"mustafa"};
+            func(sx);
+
+            string_view sv;
+            func(sv)
+        }
+
+=============== Hatali Kullanimlar ======================
+# string_view baktigi dizinin sahibi degil
+
+  ex:
+    char str[]{"necati ergin "};
+
+    string_view sv = str;
+    std::cout << "sv = " << sv << "\n";
+
+    str[1] = 'u';
+    str[3] = 'x';
+
+    std::cout << "sv = " << sv << "\n"; // degismis yazi
+
+## ozellikle auto ile yazilan type deduction a dikkat
+
+  ex:
+    using namespace std::literals;
+
+    auto x = "mustafa";     // x -> const char*
+    auto y = "mustafa"s;    // y -> string, literal operator 
+    auto z = "mustafa"sv;   // z-> string_view
+
+
+=============
+Note: string literal
+
+following two code works similarly:
+  ex:1
+    auto x = "mustafa"s;
+
+  ex:2
+    string foo();
+
+    int main(){
+        auto x = foo();     // mandatory copy ellision
+    }
+=============
+
+# Bir fonksiyonun geri donus degerini string_view yapmayin 
+  R-val return value yu string_view ile yakalamayin
+
+  ex:
+    class Person {
+    public:
+        std::string getname() const;
+
+    private:
+        std::string mname;
+    };
+
+    int main()
+    {
+        Person p;
+
+        string_view sv = p.get_name();  // sv is a dangling reference
+
+        // getname returns PR-value
+        // string_view doesn't do any life extension
+        // therefore sv is dangling pointer from the begining
+    }
+
+  ex:
+    string func()
+    {
+        string s{ "akif" };
+        return s;
+    }
+
+    int main()
+    {
+        string_view sv = func();    // undefined behaviour
+                                    // return parameter of func is already death
+
+        cout << sv;
+    }
+
+# string_view in gosterdigi container reallocation yaparsa,
+  string view dangling olur.
+
+  ex:
+    string sx{ "mustafa bakircioglu" };
+
+    string_view sv{ sx };
+
+    cout << sv << "\n";
+
+    sx.assign(100, 'A');    // yazi degisti, reallocation
+
+    cout << sv << "\n";     // dangling pointer, sv hala eski yaziyi gosterir
+
+================= benefits of string view =================
+# string_view in kopyalama maliyeti yok, okumaya dair API leri saglar 
+
+  ex:
+    void process(string_view sv)
+    {
+        sv.substr()     // sununla ayni: sv.substr(0, npos)
+        sv.substr(15)   // sununla ayni: sv.substr(15, npos)
+
+        // string_view degil string.substr kullanilsa yeni bir string uretilecekti.
+        // asagidaherhagi bir kopyalama malyeti yok
+
+        auto sx = sv.substr(15, 20);    // sx string view
+    }
+
+
+  ex:
+    void process(string_view sv)
+    {
+        if(auto idx = sv.find(.); idx != string::npos) {
+           // ... 
+        }
+    }
+
+  ex:
+    string sx{ "mustafa bakircioglu" };
+
+    cout << "boolalpha" << sx.starts_with("mustafa") << "\n";   // true
+    cout << "boolalpha" << sx.ends_with("oglu") << "\n";        // true

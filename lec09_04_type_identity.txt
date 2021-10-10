@@ -1,0 +1,83 @@
+========================== Type Identity (c++20) =============================
+# motivation question:
+
+    template<typename T>
+    void process(std::vector<T> x, T y, int idx);
+
+    int main()
+    {
+        std::vector<int> vec{};
+
+        process(vec, 10, 3);        // gecerli
+
+        std::vector<string> vec2{};
+        process(vec2, "neco", 3);   // gecersiz, conflicting parameters
+                                    // T= string, "neco" -> cstring
+    }
+
+## => oyle bir sey yapmak istiyoruz ki 2. parametre icin tur cikarimi yapilmasin
+
+    template<typename T>
+    struct TypeIdentity {
+        using type = T;
+    };
+
+    template<typename T>
+    using TypeIdentity_t = typename TypeIdentity::type;
+
+    template<typename T>
+    void process(std::vector<T> x, Typeidentity_t<T> y, int idx);
+
+    int main()
+    {
+        std::vector<string> vec2{};
+        process(vec2, "neco", 3);       // ok, y icin type deducution yok
+    }
+
+
+# standard kutuphane, c++20
+
+  ex:
+    #include <type_traits>
+
+    int main()
+    {
+        type_identity_t<int> x;     // x = int
+        type_identity_t<double> x;  // x = double
+    }
+
+  ex:
+    template<typename T>
+    void func(std::vector<T> x, std::type_identity_t<T> y)
+    {
+        // type_identity_t<T> icin type deduction yapilmaz
+        // ex: T = int =? type_identity_t<T> = int 
+        
+    }
+
+  ex: (ben ekledim: cppref.com)
+	template <class T>
+	T foo(T a, T b) {
+	  	return a + b;
+	}
+	 
+	template <class T>
+	T bar(T a, std::type_identity_t<T> b) {
+	  	return a + b;
+	}
+	 
+	int main() {
+	  	// foo(4.2, 1); 		   // error, deduced conflicting types for 'T'
+	  	std::cout << bar(4.2, 1);  // OK, calls bar<double>
+	}
+
+======================================================================
+# soru: underlying type nedir?
+
+    enum class Nec : char {nxy, pcr, msn};  // char is underlying type
+
+    enum class Nec : unsigned {nxy, pcr, msn};  
+
+    underlying_type_t<Nec> x = 5;           // x is unsigned
+
+======================================================================
