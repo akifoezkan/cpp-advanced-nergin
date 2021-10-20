@@ -61,7 +61,7 @@
 
     #include<string_view>   //header
 
-    basic_string_view<char, ...>  //type
+    std::basic_string_view<char, std::char_traits<char> >(...)  //type
 
     std::cout << sizeof(char*)       << "\n";    // 4
     std::cout << sizeof(string_view) << "\n";    // 8, 2 pointer 
