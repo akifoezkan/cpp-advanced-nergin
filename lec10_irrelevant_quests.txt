@@ -1,0 +1,18 @@
+## time: 1:16:10 
+
+    decltype(auto) func(int x)
+    {
+        return (x);     // ub, return type: type(x)&
+
+        //  return x;   // ok, return type: type(x)
+                        // auto deduction: R-val ->
+    }
+
+    // bu sununla ayni
+
+    int& func(int x)
+    {
+        return (x);     //ub, automatic omurlu nesneye referans dondurur
+    }
+
+

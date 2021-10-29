@@ -118,7 +118,7 @@ string view wrapper works as such:
 
     int main()
     {
-        string_vierw sv{"enes alp"};
+        string_view sv{"enes alp"};
 
         func(sv);           // error, no copy ctor: string_view -> string
         

@@ -135,6 +135,10 @@
     //    operator<< fonksiyonu, sv objesinin sonunda NULL olsun olmasin dogru yazdirir.
     //    .data() fonksiyonu NULL char gorene kadar yazdirir.
 
+
+    // => Note that string_view sv{str} is undefined behaviour when
+    //    str char array doesn't end with a NULL char. (see lec_10_sview_part2.txt)
+
 ## nelerle initialize edebilirim
     - const char
     - string
