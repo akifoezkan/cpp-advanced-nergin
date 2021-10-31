@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>lec12_templates03_argument_deduction.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<p>==================== template argument deduction ====================</p>
+<h1 id="derleyicinin-kod-yazabilmesi-icin-parametreleri-compile-time-da-bilmesi-gerekir">Derleyicinin kod yazabilmesi icin parametreleri compile-time da bilmesi gerekir</h1>
+<p>peki derleyici bunu nasil bilecek?</p>
+<p>3 temel arac var:</p>
+<ol>
+<li>
+<p>template argument deduction</p>
+<ul>
+<li>fonksiyon sablonlari</li>
+<li>class templates, CTAD: (C++17)</li>
+</ul>
+<p>ex:</p>
+<pre class="hljs"><code><div>       <span class="hljs-keyword">int</span> x = <span class="hljs-number">10</span>, y = <span class="hljs-number">34</span>;
+       swap(x, y);     <span class="hljs-comment">// context den anliyor</span>
+</div></code></pre>
+<p>ex:</p>
+<pre class="hljs"><code><div>       <span class="hljs-built_in">vector</span> x = {<span class="hljs-number">1</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span>, <span class="hljs-number">5</span>};   <span class="hljs-comment">// buradan vector type i anlar</span>
+       <span class="hljs-built_in">vector</span>&lt;<span class="hljs-keyword">int</span>&gt; x = {<span class="hljs-number">1</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span>, <span class="hljs-number">5</span>};
+
+       <span class="hljs-built_in">vector</span> y = {x, x};  <span class="hljs-comment">// vector&lt;vector&lt;int&gt;&gt;</span>
+</div></code></pre>
+<p>ex:</p>
+<pre class="hljs"><code><div>       optional x = <span class="hljs-number">5</span>;
+</div></code></pre>
+<p>ex:</p>
+<pre class="hljs"><code><div>       pair p = {<span class="hljs-number">12</span>, <span class="hljs-number">6</span>};
+       pair p2 = {<span class="hljs-number">2.3</span>, <span class="hljs-number">3.4f</span>};
+</div></code></pre>
+<p>ex:</p>
+<pre class="hljs"><code><div>       <span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T, <span class="hljs-keyword">size_t</span> n&gt;
+       <span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T(&amp;)[n])</span>
+
+       <span class="hljs-keyword">int</span> a[10]</span>{};
+       func(a);
+</div></code></pre>
+<p>ex:</p>
+<pre class="hljs"><code><div>       <span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T, <span class="hljs-keyword">typename</span> U&gt;
+       <span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T(*p)(U))</span>
+       </span>{
+           <span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-keyword">typeid</span>(T).name() &lt;&lt; <span class="hljs-string">"\n"</span>;
+           <span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-keyword">typeid</span>(U).name() &lt;&lt; <span class="hljs-string">"\n"</span>;
+       }
+
+
+       <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">foo</span><span class="hljs-params">(<span class="hljs-keyword">double</span>)</span> </span>{ <span class="hljs-keyword">return</span> <span class="hljs-number">1</span> };
+
+       <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span>
+       </span>{
+           func(foo);      <span class="hljs-comment">// decay to function pointer</span>
+                           <span class="hljs-comment">// T -&gt; int, U -&gt; double</span>
+       }
+</div></code></pre>
+<p>ex:</p>
+<pre class="hljs"><code><div>       <span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T, <span class="hljs-keyword">typename</span> U&gt;
+       <span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T(Myclass::*)(U))</span>
+       </span>{
+           <span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-keyword">typeid</span>(T).name() &lt;&lt; <span class="hljs-string">"\n"</span>;
+           <span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-keyword">typeid</span>(U).name() &lt;&lt; <span class="hljs-string">"\n"</span>;
+       }
+
+
+       <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Myclass</span>{</span>
+       <span class="hljs-keyword">public</span>:
+           <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">foo</span><span class="hljs-params">(<span class="hljs-keyword">long</span>)</span> </span>{ <span class="hljs-keyword">return</span> <span class="hljs-number">1</span>; }
+       }
+
+       <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span>
+       </span>{
+           func(&amp;Myclass::foo);    <span class="hljs-comment">// decay to function pointer</span>
+                                   <span class="hljs-comment">// T -&gt; int, U -&gt; long</span>
+       }
+</div></code></pre>
+</li>
+<li>
+<p>explicit template argument</p>
+<ul>
+<li>template parametresini user verir</li>
+</ul>
+<p>ex:</p>
+<pre class="hljs"><code><div>   <span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T, <span class="hljs-keyword">typename</span> U&gt;
+   <span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T, U)</span>
+   </span>{
+
+   }
+
+   <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span>
+   </span>{
+       func&lt;<span class="hljs-keyword">int</span>, <span class="hljs-keyword">double</span>&gt;(<span class="hljs-number">12</span>, <span class="hljs-number">2.3</span>)
+   }
+</div></code></pre>
+<ul>
+<li>bazi template lerde deduction sansi yok, bu durumda explicit cok onemli</li>
+</ul>
+<p>ex:</p>
+<pre class="hljs"><code><div>       <span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T, <span class="hljs-keyword">typename</span> ...Types&gt;
+       <span class="hljs-built_in">std</span>::<span class="hljs-built_in">unique_ptr</span>&lt;t&gt; <span class="hljs-title">MakeUnique</span><span class="hljs-params">(Types &amp;&amp; ...args)</span>
+       </span>{
+           <span class="hljs-keyword">return</span> <span class="hljs-built_in">std</span>::<span class="hljs-built_in">unique_ptr</span>&lt;T&gt;{<span class="hljs-keyword">new</span> T{<span class="hljs-built_in">std</span>::forward&lt;Types&gt;(args)...}};
+       }
+
+       make_unique&lt;<span class="hljs-keyword">int</span>&gt;(<span class="hljs-number">12</span>);   <span class="hljs-comment">// deduction sansi yok</span>
+</div></code></pre>
+<p>ex:</p>
+<pre class="hljs"><code><div>      <span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T, <span class="hljs-keyword">typename</span> U&gt;
+      <span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T x, U y)</span>
+      </span>{...}
+
+      func&lt;<span class="hljs-keyword">int</span>&gt;(<span class="hljs-string">'A'</span>, <span class="hljs-number">4.5</span>);
+</div></code></pre>
+<p>ex:</p>
+<pre class="hljs"><code><div>      <span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y&gt;
+      <span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">()</span>
+      </span>{...}
+
+      func&lt;<span class="hljs-number">10</span>, <span class="hljs-number">20</span>&gt;();
+</div></code></pre>
+</li>
+<li>
+<p>default template parameter</p>
+<ul>
+<li>c++11 sonrasi fonksiyonlarda kullanilma hakki geldi</li>
+</ul>
+<p>ex:</p>
+<pre class="hljs"><code><div>   <span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T, <span class="hljs-keyword">typename</span> U = <span class="hljs-keyword">int</span>&gt;
+   class Myclass{};
+
+   <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span>
+   </span>{
+       Myclass&lt;<span class="hljs-built_in">std</span>::<span class="hljs-built_in">string</span>&gt;
+       Myclass&lt;<span class="hljs-keyword">int</span>, <span class="hljs-keyword">double</span>&gt;
+   }
+</div></code></pre>
+<ul>
+<li>container siniflari</li>
+</ul>
+<p>ex:</p>
+<pre class="hljs"><code><div>  <span class="hljs-built_in">vector</span>&lt;<span class="hljs-keyword">int</span>&gt; -&gt; <span class="hljs-built_in">vector</span>&lt;<span class="hljs-keyword">int</span>, <span class="hljs-built_in">std</span>::allocator&lt;<span class="hljs-keyword">int</span>&gt;&gt;;
+
+  <span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> K, <span class="hljs-keyword">typename</span> Comp = less&lt;K&gt;, <span class="hljs-keyword">typename</span> A = allocator&lt;K&gt;&gt;
+  class ...
+</div></code></pre>
+<p>ex:</p>
+<pre class="hljs"><code><div><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T&gt;
+<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">DefaultDelete</span> {</span>
+   <span class="hljs-keyword">operator</span>()(T *p)
+   {
+       <span class="hljs-keyword">delete</span> p;
+   }
+};
+
+<span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T, <span class="hljs-keyword">typename</span> D = <span class="hljs-built_in">std</span>::default_delete&lt;T&gt;&gt;
+class UniquePtr {
+<span class="hljs-keyword">public</span>:
+   ~UniquePtr()
+   {
+       D{}(mp);    <span class="hljs-comment">// aslinda delete eden deleter</span>
+   }
+
+<span class="hljs-keyword">private</span>:
+   T* mp;
+};
+</div></code></pre>
+<p>ex:</p>
+<pre class="hljs"><code><div><span class="hljs-comment">// ostream sinif</span>
+
+basic_ostream&lt;<span class="hljs-keyword">char</span>&gt; =&gt; basic_ostream&lt;<span class="hljs-keyword">char</span>, ...&gt;
+
+<span class="hljs-built_in">string</span> =&gt; basic_string&lt;<span class="hljs-keyword">char</span>, char_traits&lt;<span class="hljs-keyword">char</span>&gt;, allocator&lt;<span class="hljs-keyword">char</span>&gt;&gt;
+</div></code></pre>
+</li>
+</ol>
+<blockquote>
+<p>=&gt; default template parameter alan argumanin sagindaki butun parametreler
+default arg almak zorunda</p>
+</blockquote>
+<h2 id="fonksiyon-cagirisinda-kullanilan-argumanlar-yoluyla-template-parametre-cikariminin-yapilmasi-deductiondaki-tek-yol-degil">Fonksiyon cagirisinda kullanilan argumanlar yoluyla template parametre cikariminin yapilmasi deductiondaki tek yol degil</h2>
+<p>ex:</p>
+<pre class="hljs"><code><div>  <span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T, <span class="hljs-keyword">typename</span> U&gt;
+  <span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T x, U y)</span></span>;
+
+  <span class="hljs-keyword">void</span>(*fp)(<span class="hljs-keyword">int</span>, <span class="hljs-keyword">double</span>) = &amp;func;   <span class="hljs-comment">// template parameters of func are deduced</span>
+</div></code></pre>
+<p>=====================================================================</p>
+<h1 id="template-argument-deduction-icin-derleyici-2-fazda-kontrol-yapar">template argument deduction icin derleyici 2 fazda kontrol yapar</h1>
+<ol>
+<li>
+<p>parametreler eslestirilmeden bir sytax check yapilir:</p>
+<blockquote>
+<p>instantiation yok (kod yazma yok), template kod var<br>
+parameter-independent isim arama, parantez vs.</p>
+</blockquote>
+</li>
+<li>
+<p>derleyici template kodunu fiilen yazar (instantitation var).
+Normal cpp kodda oldugu gibi normal bir syntax chack yapilir</p>
+</li>
+</ol>
+<h2 id="auto-ile-template-type-deduction-arasinda-1-istisna-harici-hic-bir-fark-yok">auto ile template type deduction arasinda 1 istisna harici hic bir fark yok</h2>
+<pre class="hljs"><code><div>  <span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T&gt;
+  <span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T x)</span> </span>{}
+
+  <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span>
+  </span>{
+      <span class="hljs-comment">// kurallar ayni, bir istisna harici</span>
+      <span class="hljs-keyword">auto</span> x = expr;
+      func(expr)
+  }
+</div></code></pre>
+<h2 id="template-typename-deduction-rules">template typename deduction rules:</h2>
+<ol>
+<li>call parametresinin referans declaratoru icermemesi</li>
+<li>call parametresinin referans declaratoru icermesi</li>
+<li>call parametre forwarwding referans</li>
+</ol>
+<h3 id="1-call-parametresinin-referans-declaratoru-icermemesi">1. call parametresinin referans declaratoru icermemesi</h3>
+<ul>
+<li>
+<p>const luk ve referanslik kaybedilir kaybedilir</p>
+<p>ex:</p>
+<pre class="hljs"><code><div>  <span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T&gt;
+  <span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T x)</span></span>;
+  
+  <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span> </span>{
+    <span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span> x = <span class="hljs-number">10</span>;
+    <span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span>&amp; z = <span class="hljs-number">10</span>;
+
+    func(x);   <span class="hljs-comment">// T = int, const luk duser</span>
+    func(z);   <span class="hljs-comment">// T = int, ref lik de duser</span>
+  }
+</div></code></pre>
+</li>
+<li>
+<p>array decay olur</p>
+<p>ex:</p>
+<pre class="hljs"><code><div>  <span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T&gt;
+  <span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T x)</span></span>;
+  
+  <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span> </span>{
+    <span class="hljs-keyword">int</span> a[<span class="hljs-number">10</span>]{}
+    func(a);        <span class="hljs-comment">// T = int*, array decay (dizi turu degil)</span>
+
+    <span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span> b[<span class="hljs-number">10</span>]{};
+    func(b)         <span class="hljs-comment">// T = const int*, low-level constluk dusmez</span>
+                    <span class="hljs-comment">// (high-level constluk duser)</span>
+ }
+</div></code></pre>
+</li>
+<li>
+<p>string literal -&gt; const char*</p>
+<p>ex:</p>
+<pre class="hljs"><code><div>  <span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T&gt;
+  <span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T x)</span></span>;
+  
+  <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span> </span>{
+    func(<span class="hljs-string">"ali"</span>);    <span class="hljs-comment">// T= const char*, array decay</span>
+ }
+</div></code></pre>
+</li>
+<li>
+<p>function name -&gt; function pointer</p>
+<p>ex:</p>
+<pre class="hljs"><code><div>  <span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T&gt;
+  <span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T x)</span></span>;
+  
+  <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span> </span>{
+    <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">foo</span><span class="hljs-params">(<span class="hljs-keyword">int</span>)</span></span>;
+    func(foo);      <span class="hljs-comment">// T = int(*)(int), function -&gt; function pointer</span>
+ }
+</div></code></pre>
+</li>
+</ul>
+<blockquote>
+<p>=&gt; Ayni template tur parametresi kullanan birden fazla parametre varsa bunlar ayni olmak zorunda</p>
+</blockquote>
+<p>ex:</p>
+<pre class="hljs"><code><div><span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T&gt;
+<span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T x, T y)</span>
+
+<span class="hljs-title">func</span><span class="hljs-params">(<span class="hljs-number">1</span>, <span class="hljs-number">4.5</span>)</span></span>;     <span class="hljs-comment">// ambiguity</span>
+func(<span class="hljs-string">'A'</span>, <span class="hljs-number">120</span>);   <span class="hljs-comment">// ambiguity</span>
+</div></code></pre>
+<h3 id="2-call-parametresinin-referans-declaratoru-icermesi">2. call parametresinin referans declaratoru icermesi</h3>
+<blockquote>
+<p>=&gt;Note: deduction her zaman dogru bir sekilde yapilamayabilir
+ex:</p>
+<pre class="hljs"><code><div><span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T&gt;
+<span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T x, T y)</span>
+
+<span class="hljs-title">func</span><span class="hljs-params">(<span class="hljs-number">12</span>)</span></span>;   <span class="hljs-comment">// error, sol taraf PR value ya baglanamz</span>
+</div></code></pre>
+</blockquote>
+<ul>
+<li>
+<p>const luk dusmez
+ex:</p>
+<pre class="hljs"><code><div><span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T&gt;
+<span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T &amp;x)</span>
+</span>{
+    T y;  <span class="hljs-comment">// error, const int y must be initialized</span>
+}
+
+<span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span> x = <span class="hljs-number">10</span>;
+func(x);            <span class="hljs-comment">// T = const int</span>
+</div></code></pre>
+</li>
+<li>
+<p>array to pointer conversion olmaz (array decay yok):</p>
+<p>ex:</p>
+<pre class="hljs"><code><div><span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T&gt;
+<span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T &amp;x)</span>
+</span>{
+    T y{};  <span class="hljs-comment">// T = int[3]</span>
+
+    <span class="hljs-built_in">std</span>::<span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-keyword">typeid</span>(y).name() &lt;&lt; <span class="hljs-string">"\n"</span>;
+}
+
+<span class="hljs-keyword">int</span> a[<span class="hljs-number">3</span>]{};
+func(a);      <span class="hljs-comment">// T= int[3], decay yok</span>
+
+<span class="hljs-comment">// derleyicinin yazacagi kod</span>
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(<span class="hljs-keyword">int</span>(&amp;x)[<span class="hljs-number">3</span>])</span></span>;
+</div></code></pre>
+<p>ex:</p>
+<pre class="hljs"><code><div><span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T&gt;
+<span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T &amp;x)</span> </span>{}
+
+<span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span> a[] = {<span class="hljs-number">1</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span>};
+func(a);    <span class="hljs-comment">// T = const int[3]</span>
+</div></code></pre>
+</li>
+<li>
+<p>function -&gt; function referans</p>
+<p>ex:</p>
+<pre class="hljs"><code><div><span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T&gt;
+<span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T &amp;x)</span> </span>{}
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">bar</span><span class="hljs-params">(<span class="hljs-keyword">int</span>)</span></span>;
+
+func(bar);  <span class="hljs-comment">// function reference</span>
+
+<span class="hljs-comment">// derleyici sunu yazacakti</span>
+
+func(<span class="hljs-keyword">int</span>(&amp;r)(<span class="hljs-keyword">int</span>))
+</div></code></pre>
+<p>soru:</p>
+<pre class="hljs"><code><div><span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T&gt;
+<span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T &amp;x)</span> </span>{}
+
+func(<span class="hljs-string">"alican"</span>); <span class="hljs-comment">// T = const char[7]    </span>
+</div></code></pre>
+<p>error ex:</p>
+<pre class="hljs"><code><div><span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T&gt;
+<span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T &amp;x, T&amp; y)</span> </span>{}
+
+func(<span class="hljs-string">"alican"</span>, <span class="hljs-string">"ab"</span>);   <span class="hljs-comment">// ambiguity, const char[7] vs const char[3]</span>
+</div></code></pre>
+<p>error ex:</p>
+<pre class="hljs"><code><div><span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T&gt;
+<span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T &amp;x, T&amp; y)</span> </span>{}
+
+<span class="hljs-keyword">int</span> a[<span class="hljs-number">5</span>]{};
+<span class="hljs-keyword">int</span> a[<span class="hljs-number">7</span>]{};
+func(a, b); <span class="hljs-comment">// ambiguity,  int[7] vs int[3]</span>
+
+<span class="hljs-comment">// fonksiyon turleri referans olmasaydi ambiguity olmazdi:</span>
+<span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T&gt;
+<span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T x, T y)</span> </span>{}
+
+<span class="hljs-keyword">int</span> a[<span class="hljs-number">5</span>]{};
+<span class="hljs-keyword">int</span> a[<span class="hljs-number">7</span>]{};
+func(a, b); <span class="hljs-comment">// array decay</span>
+</div></code></pre>
+</li>
+</ul>
+<h3 id="3-call-parametre-forwarding-referans">3. call parametre forwarding referans</h3>
+<p>ne olursan ol ben seni alirim</p>
+<p>ex:</p>
+<pre class="hljs"><code><div><span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T&gt;
+<span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T&amp;&amp; x)</span></span>;     <span class="hljs-comment">// forwarding ref, not a PR-val ref</span>
+</div></code></pre>
+<ul>
+<li>
+<p>derleyicinin yazdigi fonksiyonun parametre degiskeni mutlaka referans olacak<br>
+ya L-val ref yada R-val ref olacak</p>
+<blockquote>
+<p>=&gt; Parametre icin reference collapsing rules</p>
+</blockquote>
+<p>ex:</p>
+<pre class="hljs"><code><div><span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T&gt;
+<span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T&amp;&amp; x)</span></span>;     <span class="hljs-comment">// forwarding ref, not a PR-val ref</span>
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span>
+</span>{
+  func(<span class="hljs-number">10</span>);       <span class="hljs-comment">// T = R-val ref, int</span>
+                  <span class="hljs-comment">// type of x: int&amp;&amp; </span>
+  
+  <span class="hljs-keyword">int</span> ival{<span class="hljs-number">10</span>};
+  func(ival);     <span class="hljs-comment">// T = L-val ref, int&amp;</span>
+                  <span class="hljs-comment">// type of x: int&amp; </span>
+}
+</div></code></pre>
+</li>
+</ul>
+<p>=&gt; tabiki forwarding referans perfect-forwarding olmak zorunda degil</p>
+<p>ex:
+```cpp
+template<typename T>
+void func(T&amp;&amp; x, T y) {}</p>
+<pre><code>int main()
+{
+    int a = 10;
+
+    func(a, a); // ambiguity: T= int&amp;, T = int
+}
+```
+
+ex:
+```cpp
+template&lt;typename T&gt;
+void func(T&amp;&amp; x, const std::vector&lt;T&gt;&amp; vec) {}
+
+int main()
+{
+    vector&lt;int&gt; ivec(10);
+    func(ivec[0], ivec);    // ambiguity, T = int&amp; vs T = int
+                            // we can solve this by type identity veya explicit argument
+}
+```
+</code></pre>
+<h1 id="tur-cikarimini-bloke-etme">tur cikarimini bloke etme</h1>
+<ul>
+<li>type identity</li>
+<li>yada 2. bir tur kullan</li>
+</ul>
+<p>ex:</p>
+<pre class="hljs"><code><div><span class="hljs-meta"># <span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;type_traits&gt;</span></span>
+
+<span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> T&gt;
+<span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(T x, <span class="hljs-built_in">std</span>::add_lvalue_reference&lt;T&gt; y)</span>
+</span>{
+   <span class="hljs-comment">// 2.parametre birinci parametrenin turunden elde edilecek</span>
+}
+</div></code></pre>
+
+</body>
+</html>
