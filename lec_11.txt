@@ -1,0 +1,754 @@
+
+uncooked:
+
+    void operator""_x(const char*)
+    {
+        // sonunda NULL char var
+        
+        std::puts(p);
+    }
+
+    int main()
+    {
+        3456_x;     // ok
+
+        "mehmet"_x; // error
+        
+        // compiler makes this
+        operator""_x("3456");
+
+    }
+
+
+cooked:
+
+    void operator""_x(const char*, size_t n)
+    {
+        std::puts(p);
+        std::cout << "n = " << n << "\n";
+    }
+
+    int main()
+    {
+        3456_x;         // error
+
+        "mustafa"_x;    // ok
+
+    }
+
+
+# ex:
+    // uncooked
+
+    unsigned operator""_b(const char* p)
+    {
+        unsigned result{};
+
+        while(*p)
+        {
+            char digit = *p;
+            if(digit != 0 && digit != 1)
+            {
+                throw std::runtime_error{"invalid binary char!"};
+            }
+
+            result = result * 2 + digit - '0';
+            ++p;
+
+            // rakam karakterleri ardisik olmak zorunda
+            // ancak harf karakterleri ardisik olmak zorunda degil
+            // (ASCI kodlari ardisik)
+        }
+    }
+
+    int main()
+    {
+        auto val = 01010100_b; 
+
+        try {
+            auto val = 11111_b;
+            std::cout << val << "\n";
+        }
+        catch(const std::exception& ex) {
+            std::cout << ex.what() << "\n";
+        }
+    }
+
+#
+    void operator""_print(const char* p)
+    {
+       std::cout << std::quoted(p);
+    }
+
+
+    int main()
+    {
+        76542_print;
+    }
+
+
+
+==========================
+# throw expressions 
+    - type: void
+    - PR value
+    
+    decltype(throw 12) foo();
+    pvcat(throw 5);
+
+===========================
+
+# soru:
+    soyle bir ifade yazabilir miyim?
+
+        int foo()
+
+        int main()
+        {
+            int x  = foo();
+
+            auto val = x > 0 ? x : throw std::runtime_error{"hata"};    // ok
+
+            // type of val: int
+            // throw .... : void
+            
+            // kosul operatorlerinde, common type varsa common type alinir
+        }
+
+
+ex:
+    int foo()
+    {
+        return 5;
+    }
+
+    int main()
+    {
+        try {
+            int x  = foo();
+            auto val = x > 0 ? x : throw std::runtime_error{"hata"};    // ok
+            std::cout << "val = " << val << "\n";
+        }
+        catch {
+            // ???
+        }
+    }
+
+
+# bir fonksiyonun geri donus degeri void ise return type olarak kullanilabilir
+
+  ex:
+    void func()
+    {
+        return 5;       // error
+    }
+
+  ex:
+    void foo();
+
+    void func()
+    {
+        return foo();   // ok, bir fonksiyo
+    }
+
+# void turden ifadeler
+    pvcat(void());
+
+    decltype(void()) foo(); // ??
+
+
+# void turden ifadeler
+    1. void() -> this is void
+
+    2. to show that I wont use the return value of a function
+        int foo();
+        (void)foo();
+
+    3.
+        ex:
+            int x = 10;
+            (x, void()) // ths is also void type
+
+
+    eX:
+        void foo()
+
+        foo();  // void type
+
+================================
+# 
+
+    #include <numbers>  // c++20
+                        // std::numbers::pi -> std::numbers::pi_v<double>
+
+    class Circle {
+    public:
+        explicit Circle(double radius) : m_radius{radius} {};
+
+        double get_area() const
+        {
+           std::numbers::pi * m_radius * m_radius; 
+        }
+        
+        double get_circumference() const
+        {
+            std::numbers::pi * 2 * m_radius;
+        }
+
+        void set_radius(double radius)
+        {
+            m_radius = radius;
+        }
+
+    private:
+        double m_radius;
+    };
+
+
+    // int double gibi rakamlarla temsil etmenin dezavantajlari ??
+    - overload edilebiliri ???
+    
+
+    soru:
+        kodu modifiye edelim yaricap yerine cap alsin
+
+# ctoru overload etmek istiyoruz ancak signature ayni
+
+    class Circle {
+    public:
+        explicit Circle(double radius) : m_radius{radius} {};
+        
+        explicit Circle(double diameter) : m_radius{diameter / 2.} {};
+
+
+        // syntax error, ctors have the same signature
+        
+        // ...
+
+    }
+
+    -> note that this is not a problem for member functions
+
+
+## solution1, tag dispatch:
+
+    ex:
+        class as_diameter{};
+        class as_radius{};
+
+        class Circle {
+        public:
+            explicit Circle(as_radius, double radius) : m_radius{radius} {};
+            
+            explicit Circle(as_diameter, double diameter) : m_radius{diameter / 2.} {};
+        }
+
+
+        int main()
+        {
+            Circle c1{as_diameter{}, 3.45};
+            Circle c2{as_radius{}, 3.45};
+        }
+    
+    
+## solution2, named ctor:
+    -> gercekte ctor degil
+
+    class Circle {
+    private:
+        explicit Circle(double radius) : m_radius{radius} {};
+        
+        explicit Circle(double diameter, int) : m_radius{diameter / 2.} {};
+
+    public:
+        Circle create_circle_from_diameter(double diameter)
+        {
+            // fake ctor that calls the private ctors
+        }
+        
+
+    }
+
+
+## solution3: proper solution
+    -> diameter, radius u direk bir tur yapmak
+       avantaj: boylece bunlar template haline getirilebilir
+                maliyet acisindan double ve bu wrapped type arasinda cok fark yok
+                ex: chrono
+
+    kullanilan isimler:
+    - strong type
+    - named type
+
+    => ismi ile problem domainini belli ediyor
+
+### ex: (chrono)
+
+
+    int main()
+    {
+        std::chrono::miliseconds ms;
+
+        ms = 32445;     // syntax error, sadece ms atayabiliriz
+
+        using std::chrono::literals;
+        using namespace std;
+
+        msec = 3244ms;  // ok
+        
+    }
+
+
+#ex:
+    - kg strong type olustruduk
+    - artik double ile atanmasini engelledik
+
+    class Kilogram {
+    public:
+        // double ile olusturulmasini engelledik
+        class PreventUsage{};
+        constexpr explicit Kilogram(PreventUsage, double m_val) : m_val{val} {}; 
+
+
+        double get() const 
+        {
+            return m_val;
+        }
+
+        friend constexpr Kilogram operator+(const Kilogram& left, const Kilogram& right)
+        {
+            return Kilogram{Kilogram::PreventUsage{}, left.m_val + right.m_val};
+        }
+
+
+    private:
+        double m_val;
+    };
+
+
+    constexpr Kilogram operator""_kg(long double val)
+    {
+        return Kilogram{Kilogram::PreventUsage{}, static_cast<double>(val)};
+    }
+
+    constexpr Kilogram operator""_g(long double val)
+    {
+        return Kilogram{Kilogram::PreventUsage{}, static_cast<double>(val / 1000.)};
+    }
+
+    constexpr Kilogram operator""_mg(long double val)
+    {
+        return Kilogram{Kilogram::PreventUsage{}, static_cast<double>(val / 1000. / 1000.)};
+    }
+
+    int main()
+    {
+        Kilogram x{Kilogram::PreventUsage{}, 123};
+
+        constexpr auto x = 12.5_kg;
+        
+        constexpr auto x = 12.5_kg + 2315.12_g + 76123123_mg;
+    }
+
+
+========================================================
+=> template ler isin icine girince bu konuyu birakacagiz
+========================================================
+
+========================================
+# reddedilen bir oneri: walter brown
+    - opaque typedef
+
+    ex:
+    typedef double Meter;
+    typedef double Kilogram;
+    typedef double Angle;
+
+    // these are not distinct types, therefore following is error
+
+    void foo(Meter);
+    void foo(Kilogram); // function redeclaration, both are double
+
+
+    => opaque typedef
+
+    opaque typedef double Meter;
+
+
+    -> bu durumda strong type olusturmak kolaylasacakti
+
+    => boyle bir sey olmadigi icin epey bir template metaprogramming gerekiyor
+========================================
+
+ex:
+
+    // Tag olmasa
+
+    template<typename T, typename Tag>
+    class NamedType {
+    public:
+        explicit NamedType(const T& val) : m_val{val} {};
+        explicit NamedType(T&& val) : m_val{std::move(val)} {};
+
+        T& get() { return m_val; };
+        const T& get() const { return m_val; };
+
+    private:
+        T m_val;
+    };
+
+    // KilogramTag{} and MeterTag below are inclomplete types
+
+    using Kilogram = NamedType<double, struct KilogramTag>;
+    using Meter = NamedType<double, struct MeterTag>;
+
+    // ================================
+    // Tag olmasa strong type olusmazdi:
+    // Kilogram ve Meter ayni Tur: ayni sablondan ayni parametre ile olusturulmus
+    // using Kilogram = NamedType<double>;
+    // using Meter = NamedType<double>;
+    // ================================
+
+    Kilogram operator""_kg(long double val)
+    {
+        return Kilogram{static_cast<double>(val)};
+    }
+
+    int main()
+    {
+        Kilogram x{ 12.5 };
+        Meter m{ 3.54 };
+        x = m;
+
+        x = 12.5_kg;
+    }
+
+
+=> template argumani tur belirli kosullar altinda incomplete type olabilir
+
+
+ex:
+
+    // yukaridaki kodu modifiye edelim: istenilen typelar arasinda aritmetik islem kisitlarinin ayarlanmasi
+
+
+    #include<ratio>
+
+    template<typename T, typename Tag, typename Ratio>
+    class NamedType {
+    public:
+        explicit NamedType(const T& val) : m_val{val} {};
+        explicit NamedType(T&& val) : m_val{std::move(val)} {};
+
+        T& get() { return m_val; };
+        const T& get() const { return m_val; };
+
+
+        // tur donusturme operator fonksiyonu:
+        // -> ilk 2 tur ayni, 3. tur farkli
+
+        template<typename Ratio_2>
+        operator NamedType<T, Tag, Ratio_2> const
+        {
+            return NamedType<T, Tag, Ratio_2>(get() * Ratio::num / Ratio::den * Ratio_2::den / Ratio2::num)
+        }
+
+    private:
+        T m_val;
+    };
+
+
+
+
+
+
+============================================
+# ratio small explanation:
+    -> tamamen compile time
+    -> member funcs:
+        - .num
+        - .denum
+        - .type
+    -> sadelesme compile time
+    -> negatif her zaman paya verilir
+    -> tamsayi verildiginde, denom her zaman 1
+    -> 0 a bolme undefined behaviour
+
+    template<intmax_t x, intmax_t y>
+    struct Ratio
+    {
+        constexpr static intmax_t num = x;
+        constexpr static inmax_t denum = y;
+    }
+
+    int main()
+    {
+        Ratio<12, 45>;
+
+        constexpr auto val = ratio<13, 77>::num;    // compile time
+
+        // sadelesme compile time
+        yyconstexpr auto val1 = ratio<8, 24>::num;    // 1, compile time
+        constexpr auto val1 = ratio<8, 24>::den;    // 3, compile time
+
+        // negatif her zaman paya verilir
+        constexpr auto val1 = ratio<1, -3>::num;    // -1
+
+        // tamsayi verildiginde, denom her zaman 1
+        constexpr auto val1 = ratio<8>::den;        // 1
+        
+        constexpr auto val1 = ratio<8, 0>::den;    // unedifned behaviour
+
+
+        cout << typeid(ratio<12, 132>::type).name() << "\n";
+
+    }
+
+# ratio_less
+    -> karsilastirma
+
+    ratio_less<ratio<13791, 43197>, ratio<13799, 43193>>::value;    // true
+
+# variable template
+
+    ratio_less_v<ratio<13791, 43197>, ratio<13799, 43193>>;         // true
+    
+
+# arithmetic 
+
+    using rfirst = std::ratio<17, 91>;
+    using rsecond = std::ratio<23, 39>;
+
+    ratio_add<rfirst, rsecond>::type;
+    ratio_add_t<rfirst, rsecond>;     // alias template
+
+    using result = ratio_add<rfist, rsecond>::type;
+
+    // result bir deger degil, bir tur
+
+    => eger deger ile iilgileniyorsak
+
+    auto val = ratio_add<rfist, rsecond>::den;  // val deger
+
+#
+    std::cout << typeid(centim).name();  // ratio<1, 100>
+    std::cout << typeid(deci).name();    // ratio<1, 10>
+    std::cout << typeid(micro).name();   // ratio<1, 1000'000'000>
+
+# duration olcu birimi
+    -> mesela salise turunden say
+    
+    using salise = std::chrono::duration<int, std::ratio<1, 60>>; 
+    using halfday = std::chrono::duration<long long int, std::ratio<12 * 60 * 60>>; 
+
+# ex:
+
+    using namespace std;
+    using namespace std::chrono;
+
+    auto start = steady_clock::now();
+
+    vector<int> ivec;
+    rfill(ivec, 200'000, Irand{0, 100'000});
+    sort(ivec.begin(), ivec.end());
+
+    auto end = steady_clock::now();
+
+    std::cout << duration<double>(end - start).count() << "\n";     // sn
+    std::cout << duration<double, std::ratio<1, 1000>>(end - start).count() << "\n";
+==================================================
+# random
+    -> eng              : random number generator
+    -> random_device{}  : generates seed value
+    -> dist(eng)        : generates random number
+
+    mt19937 eng{random_device{}()};                 // sizeof(mt19937) = 5000, cok buyuk bir nesne 
+    uniform_int_distribution dist{0, 1000};
+    
+    for(int i = 0; i< 100; ++i)
+    {
+        std::cout << dist(eng) << "\n";
+    }
+
+    ex:
+        mt19937 eng{random_device{}()};
+        uniform_real_distribution dist{3.4, 9.123};
+
+        std::cout << dist(eng) << "\n";
+
+
+==============
+next lecture:
+    - function template
+    - class template
+    - variable template
+    - alias template
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

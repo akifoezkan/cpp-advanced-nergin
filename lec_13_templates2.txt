@@ -1,0 +1,834 @@
+# gercek fonksiyonlarla template foksiyonlarin imza 
+
+    * su fonksiyonlar farkli imzaya sahip
+
+        template<typename T>
+        int foo(T);
+
+        template<typename T>
+        double foo(T);
+
+    * su fonksiyonlar ayni imzaya sahip ???
+        
+        template<typename T, typename U>
+        int foo(T, U) {};
+        
+        template<typename U, typename T>
+        int foo(U, T) {};
+
+   => Function overloading olup/olmamasi veya
+      fonksiyon cagirisinda ambiguity, syntax error olup/olmamasi farkli
+
+
+# partial ordering rules:
+    -> more specific olan cagirilir
+    -> ancak oyle seneryolar var ki daha specific olani standard belirler
+
+    ex:
+        // 1
+        template<typenmae Y>
+        void func(T*)
+        {
+            std::cout << "T *\n";
+        }
+
+        // 2
+        template<typename T>
+        void func(const T*)
+        {
+            std::cout << "const T*\n";
+        }
+
+        overloading var
+
+        int x = 10;
+        func(&x);       // 1
+
+    ex:
+        // 1
+        template<typenmae T>
+        void func(T)
+        {
+            std::cout << "T *\n";
+        }
+
+        // 2
+        template<typename T>
+        void func(T*)
+        {
+            std::cout << "const T*\n";
+        }
+
+        int x  = 10;
+        func(&x);       // 2
+
+# ortada birden fazla fonksiyon varsa, derleyici once "function overload set" i olusturur
+    Ortada template fonksyon varsa derleyici 
+    1) once "argument deduction" yapmak zorunda
+    2) ardindan derleyici "substitution" yapar (function i yazar).
+
+    template olmayan exact match varsa, template olmayan fonksiyon cagirilir
+
+    ex:
+        // 1
+        // substituion: void func(int *)
+        template<typenmae Y>
+        void func(T*)
+        {
+            std::cout << "T *\n";
+        }
+
+        // 2
+        // substituion: void func(const int *)
+
+        template<typename T>
+        void func(const T*)
+        {
+            std::cout << "const T*\n";
+        }
+
+        int mai
+        int x = 10;
+        func(&x);       // 1
+
+# SFINAE:
+    -> Substituion failure is not an Error
+        Substitution sirasinda hata olursa, derleyici syntax error vermez
+        ancak bunun yerine derleyici bu fonksiyonu overload setten cikarir
+
+    ex:
+        template<typenmae T>
+        typenmae T::nec func(T x);
+
+        int main()
+        {
+            int x = 10;
+
+            func(x);
+        }
+
+        T = int, substituion sirasinda error olacak int::nec olamaz
+        Normalde bu syntax error olacakti, 
+        ancak bunun yerine derleyici bu fonksiyonu overload setten cikarir
+
+
+    ex:
+        template<typename T, unsigned N>
+        std::size_t len(T(&)[N])
+        {
+            return N;
+        }
+
+        template<typename T>
+        typename T::size_type len(T const& t)   
+        {
+            // Note: template e bagli dependent ytpe lar icin typenmae zorunlu
+            return t.size();
+        }
+
+        int main()
+        {
+            int a [10]{};
+            std::cout << len(a);    // T = int, N = 10
+                                    // derleyici ilk fonk. sunu yazar: size_t len(int(&)[10]) {...}
+                                    // 2. fonksiyon typename int::size_typename ....
+                                    //    syntax error  yerine SFNIAE out oldu
+                                    //    no compiler error
+
+            std::cout << len("tmp");
+                // 1) T = const char, N = 4
+                // 2) SFNIAE out, no compielr error
+
+           int* p{};
+           std::cout << len(p); // syntax error:
+                                // no matching overloaded function found
+
+           std::allocator<int> x;
+           std;:cout << len(x);     // syntax error
+                                    // 1- gecersiz degil
+                                    // 2) T = allocator<int>
+                                    //    return type: allocator<int>::size_type
+
+           // link edilmezse syntax error yok, derleyici overload function sectit
+           // instantiation sirasinda error var:
+           //   allocator<int>.size() is not a member 
+
+        }
+
+    ex:
+        cpp kodlar/ basic02.cpp
+
+        template<typename T, unsigned N>
+        std::size_t len(T(&)[N])
+        {
+        	return N;
+        }
+        
+        template<typename T>
+        typename T::size_type len(T const& t)
+        {
+        	return t.size();
+        }
+        
+        std::size_t len(...)
+        {
+        	return 0;
+        }
+        
+        
+        int main()
+        {
+            int a[10]{};    // 1
+                            // 1 viable, 2 not viable, 3 viable
+                            // variadic parametre herkese kaybeder
+                            // 
+
+            std::cout << len("tmp");    // 1
+
+            std::vector<int> v(5);      // 2, (2, 3 viable)
+
+        	int* p{};   // 3 (3 viable, 2 SFNIAE out)
+
+        	std::allocator<int> x;
+            std::cout << len(x);    // syntax error
+                                    // 2 secilir, (2, 3 viable)
+                                    // .size() olmadigi icin syntax error
+        }
+
+## hangisi daha specific: partial ordering rules
+    -> T yerine baska bir yerde kullanilmayan fictional bir tur al
+    -> ayni seyi diger function icin de yap
+    -> ???
+
+    2) variadic fonksiyonu ve default argumani buna katma
+
+    ex:
+        // bunlardan hangisi daha specific?
+
+        template<typename T>
+        void func(T x);     // A
+
+        template<typenmae T>
+        void func(T*);      // B
+
+
+        A turu 2.fonksiyona gonderilemez
+        anca B* 1 e gonderilebilir
+
+    ex:
+        templates/overloading/partial overlading.cpp
+
+        template<typename T>
+        void t(T*, T const* = nullptr, ...);
+            // variadic parametreyi ignore et
+            // kullanilmamisssa default argumani ignore et
+        
+        template<typename T>
+        void t(T const*, T*, T* = nullptr);
+
+        void example(int* p)
+        {
+            t(p, p);
+        }
+
+        // -> syntax error var
+
+    ex:
+        void func(long double);
+        void func(char);
+
+        int main() {
+            func(2.3f);
+        }
+
+        // syntax error
+
+    ex:
+        ???
+
+    ex:
+        void func(unsigned int);
+        void func(long double);
+
+        int main() {
+            func(2.3f);     // 2, promotion
+        }
+        
+
+# exact match olursa gercek fonksiyon cagirilir
+
+    ex:
+
+        int Max(int a, int b)   //1
+        {
+            return b < a ? a: b;
+        }
+
+        template<typename T>
+        T Max(T a, T b)         // 2
+        {
+            return b < a ? a: b;
+        }
+
+        
+        auto n = Max(12, 45);   // 1 (1, 2 viable)
+        
+        auto n = Max(12, 4.5);   // 1 (1 viable)
+        
+        auto n = Max('A', 'B');   // 2
+        
+        auto n = Max<>(12, 45);   // 2
+        
+        auto n = Max<int>(12, 4.5);   // 2
+        
+        auto n = Max<int>(12, 4.5);   // 2
+
+
+    ex:
+        // overloading2.cpp
+
+        template<typename T1, typename T2>
+        auto max(T1 a, T2 b)
+        {
+            ...
+        }
+
+        template<typename RT, typenmae T1, typename T2>
+        RT max(T1 a, T2 b)
+        {
+            ...
+        }
+
+        auto a = ::max(4, 7.2);     // 1, (2 viable degil, geri donus cikarimi yapilamaz)
+
+        auto b = ::max<long double>(7.2, 4);    // 2, return type expilicit
+
+        auto c = ::max<int>(4, 7.2);        //syntax error, 2 fonksiyon da viable
+
+        ???
+
+
+#
+    ex:
+        template<typenmae T>       
+        void foo(T) = delete;
+
+        void foo(int);
+
+        int main()
+        {
+            foo(12);
+            foo(.12);   // error, deleted
+            foo(1.2f);  // error, deleted
+        }
+
+        // bu enable_if ile de yapilabilir
+
+# c++20 ile conceptler SFNIAE nin kullanim alani azaldi.
+
+====================
+# oyle bir template function yazalim ki 
+    - farkli turler uzerinden toplama yapsin
+    - return type da veri kaybi olmasin
+
+  way-1:
+    template<typename R, typename T, typename U>
+    R sum(T x, U y);
+    {
+        return x + y;
+    }
+
+    sum<double>(1.2, 16);
+
+  way-2:
+    // trailing return type
+
+    template<typename R, typename T, typename U>
+    auto sum(T x, U y) -> decltype(x + y)
+    {
+        return x + y;
+    }
+
+    // Note: syntax error, x ve y nin scope u disinda
+
+    template<typename R, typename T, typename U>
+    decltype(x + y) sum(T x, U y);
+    {
+        return x + y;
+    }
+
+    ===========================================
+    trailing return type cogunlukla template ler icin matikli
+    bir de su seneryo var:
+    
+        int(*foo(int))(int*, int*);
+    
+        return type:
+            using FPTR = int(*)(int*, int*):)
+    
+            FPTR foo()
+    
+        yada
+    
+            auto foo() -> int(*)(int*, int*)
+            { ... }
+    
+    ============================================
+
+  way-3
+    // array decay var
+    // birden fazla return type varsa geri donus turu ayni olmak zorunda
+    //
+
+    template<typenmae T, typenmae U>
+    auto foo(T x, U y)
+    {
+
+    }
+
+    ex:
+        // syntax error
+
+        auto func(int x)
+        {
+            if (x < 10)
+                return x;
+
+            return 1.5 * x; 
+        }
+
+  way-4
+    decltype(auto) foo(...)
+    {
+        ...
+    }
+
+======================= explicit / partial specialization
+# explicit specialization (full specialization)
+    -> daha cok class template larda kullanilir
+       function templates da beklenmedik seneryolar olusturabiliyor.
+       Bu yuzden tercih edilmesi gereken teknik function overloading.
+
+  ex:
+    template<typename T>
+    void func(T x)
+    {
+        std::cout << "primary template\n";    
+    }
+    
+    template<>
+    void func(int x)
+    {
+        stD::cout << "full specialization\n";
+    }
+
+    // bu sununla ayni:
+
+    template<>
+    void func<int>(int x)
+    {
+        stD::cout << "full specialization (another way)\n";
+    }
+
+    int main()
+    {
+        func(55);   // primary
+        func(4.5);  // full spec.
+        func(4.5f); // full spec.
+    }
+
+  ex:
+    template <typename T, typename U>
+    class Myclass {
+        // ...
+    };
+
+    template<>
+    class Myclass<int, double> {
+        // ...
+    };
+
+# explicit specialization definition lar resolutiona dahil edilmez   
+
+ ex:
+
+    template<typename T>
+    void func(T x)
+    {
+        std::cout << "1\n";
+    }
+
+    template<>
+    void func(int *p)   // bu fonksiyon overload resolution a katilmaz
+    {
+        std::cout << "2\n";
+
+        // bu (fonk 2) fonk 1 in full specialization i (3 u gormez) 
+    }
+
+    template<typename T>
+    void func(T* x)
+    {
+        std::cout << "3\n";
+    }
+
+
+    int main()
+    {
+        int x { 98 };
+        func(&x);       // 3
+    }
+
+
+    // fonk 2, fonk 3 u gormedigi icin fonk 1 in explixit specialization i
+
+  ex:
+
+    template<typename T>
+    void func(T x)
+    {
+        std::cout << "1\n";
+    }
+
+    template<typename T>
+    void func(T* x)
+    {
+        std::cout << "3\n";
+    }
+
+
+    template<>
+    void func(int *p)   // bu fonk 3 un full specialization i 
+    {
+        std::cout << "2\n";
+    }
+
+
+    int main()
+    {
+        int x { 98 };
+        func(&x);       // 2
+    }
+    
+# template lar ya namespac icinde yada class definition icinde olmak zorunda
+
+  ex:
+    void foo()
+    {
+        class Myclass2{};       // ok 
+
+        template<typename T>
+        class Myclass{};        // gecersiz
+
+        using Nec = int;    // ok
+                            // burada alias template kullanilamaz
+    }
+
+
+# 
+  ex:
+    namespace Nec {
+        template<typename T>
+        class Myclass {};
+    }
+
+    template<>
+    class Nec::Myclass<int> {
+        // this is ok  
+    };
+
+
+  ex:
+
+    template<typename T>
+    class Myclass {};
+
+    namespace Nec {}
+
+
+    bunlara bak: cpp-kursu-kodlar/tempalte/specialization
+
+# 
+    // 1i, 2, 3
+
+==========
+# partial specialization:
+    - fonksiyonlar icin tanimli degil
+    - class ve variable icin gecerli
+
+
+# variable templates, expilicit sopec.
+
+  ex:
+    template<typename T>
+    constexpr T SZ = sizeof(T);
+
+    int main()
+    {
+       constexpr auto x = SZ<int>;
+       cout << x;
+
+
+       constexpr auto x = SZ<void>; // error, void is incomplete, size ini alamayiz
+    }
+
+  ex:
+    template<typename T>
+    constexpr size_t SZ = sizeof(T);
+
+    // explicit spec.
+    template<typename T>
+    constepxr size_t SZ<void> = 0;
+
+    int main()
+    {
+        constexpr auto val = SZ<void>;
+    }
+
+  ex:
+    template<typename T>
+    T x = T{67392.787878};
+
+    template<>
+    constexpr int x<int> = 999;
+
+    int main()
+    {
+        cout << x<double>;
+        cout << x<float>;
+        cout << x<int>;
+    }
+    
+# ex:
+    pow, factorial
+
+
+# ex:
+    1 den 100 e kadar olan sayilari ekrana yazdiran bir kod yazin.
+    ama kodda dongu olmasin.
+
+
+    struct Myclass {
+        Myclass()
+        {
+            static int x = 0;
+            std::cout << ++x << " ";
+        }
+    };
+
+    int main()
+    {
+        Myclass a[100];
+    }
+
+
+  [way-2]
+    template<int n>
+    struct Nec : Nec<n - 1> {
+        Nec()
+        {
+            std::cout << n << " ";
+        }
+
+    };
+
+    template<>
+    struct Nec<0> {
+    };
+
+    int main()
+    {
+        Nec<100> nec;
+    }
+
+===================
+# partial specialization
+    -> primary templatein daraltilmis alternatifi icin kod saglar
+
+  ex:
+    class Myclass {
+    public:
+        Myclass()
+        {
+            std::cout << "primary template\n";
+        }
+    };
+
+    template<>
+    class Myclass<int> {
+    public:
+        Myclass()
+        {
+            std::cout << "Myclass<int>\n";
+        }
+    };
+
+
+  ex:
+    template<typename T>
+    class Myclass {
+    public:
+        Myclass()
+        {
+            std::cout << "primary template\n";
+        }
+    };
+
+    template<typename T>
+    class Myclass<T*> {
+    public:
+        Myclass()
+        {
+            std::cout << "partial specialization\n";
+            std::cout << "Myclass<T*>\n";
+        }
+    };
+
+    template<typename T>
+    class Myclass<T[10]> {
+    public:
+        Myclass()
+        {
+            std::cout << "partial specialization\n";
+            std::cout << "Myclass<T[10]>\n";
+        }
+    };
+
+
+    Myclass<long> a1;
+    Myclass<float> a2;
+    Myclass<int*> a3;
+
+
+  ex:
+    
+    template<typename T, typename U>
+    class Myclass {
+    public:
+        Myclass()
+        {
+            std::cout << "primary template\n";
+        }
+    };
+
+
+    template<typename T>
+    class Myclass<T, T> {
+    public:
+        Myclass()
+        {
+            std::cout << "partial specialization\n";
+            std::cout << "Myclass<T, T>\n";
+        }
+    };
+
+    Myclass<long, int> a1;  // primary
+    Myclass<long, long> a2; // partial
+    Myclass<long, char> a3; // partial
+
+
+  ex:
+    template<typename T>
+    class Myclass<T, int> {
+    public:
+        Myclass()
+        {
+            std::cout << "partial specialization\n";
+            std::cout << "Myclass<T, int>\n";
+        }
+    };
+
+  ex:
+    
+    template<typename T>
+    class Myclass {
+    public:
+        Myclass()
+        {
+            std::cout << "primary\n";
+        }
+    };
+
+    template<typename T, typename U>
+    class Myclass<std::pair<T, u>> {
+    public:
+        Myclass()
+        {
+            std::cout << "partial specialization\n";
+        }
+    };
+
+    Myclass<int> x;
+    Myclass<std::pair<int, float>> y;
+
+=> SFINAE sadece function overloading icin gecerli
+
+# enable_if
+    enable_if<true>::type 
+
+    enable_if<false>;       // type i yok
+
+  ex:
+    template<typename T>
+    std::enable_if<true, T>::type void foo(T x);
+    
+    template<typename T>
+    std::enable_if<false, T>::type void foo(T x);   // bu duurmda gecersiz tur olusturur
+                                                    // substitution failure, overloaddan duser
+
+  ex:
+    template<typename T>
+    std::enable_if<std::is_floating_point_v<T>, T>::type foor(T x);
+
+    yada
+
+  ex:
+    templatE<typename T>V
+    std::enable_if_t<std::is_floating_point_v<T>, T> foo(T x)
+    {
+        return x;
+    }
+
+    int main()
+    {
+        foo(12.4);  // <true, T>::type => float
+
+        foo(12);    // <false, T>::type => false in type i yok
+                    // no matching overloading func
+    }
+
+
+  ex:
+    template<typename T>
+    std::enable_if_t<std::is_floating_point_v<T>, T> foo(T x)
+    {
+        return x;
+    }
+    template<typename T>
+    std::enable_if_t<std::is_integral_v<T>, T> foo(T x)
+    {
+        return x;
+    }
+
+    int main()
+    {
+        // ..
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
