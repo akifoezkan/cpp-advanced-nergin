@@ -204,7 +204,7 @@ Use the following process to determine if one function template candidate is mor
   int main() {}
       auto a = ::max(4, 7.2);     // 1, (2 viable degil, geri donus cikarimi yapilamaz)
 
-      auto b = ::max<long double>(7.2, 4);    // 1 secilir
+      auto b = ::max<long double>(7.2, 4);    // 2 is a better match since 7.2 is double
                                               // 1 (viable): auto max(long double, int)
                                               // 2 (viable): long double max(double, int) 
 

@@ -1,0 +1,526 @@
+# compile time da deger hesaplama
+  -> eskiden?
+
+  _ex:_
+  ```cpp
+    template<unsigned base, unsigned exp>
+    struct Power {
+        constexpr static unsigned value = base * Power<base, exp - 1>::value;
+    };
+
+    template<unsigned base>
+    struct Power<base, 0> {
+        constexpr static unsigned value = 1;
+    };
+
+    // variable template
+    template<unsigned base, unsigned exp>
+    constexpr unsigned power_v = Power<base, exp>::value;
+
+    int main()
+    {
+        auto constexpr x = Power<3, 7>::value;
+        
+        auto constexpr y = power_v<3, 7>;
+    }
+  ```
+
+# type_traits header i 
+  - cogunlukla deger uretmeye yonelik (ve cogunlukla boolean value)
+
+  _ex:_
+  ```cpp
+    template<typenmae T>
+    struct xyz {
+        constexpr static bool value = true;
+    };
+  ```
+
+## is_pointer
+
+  _ex:_
+  ```cpp
+    int main()
+    {
+        using namespace std;
+
+        is_pointer<int>::value;     // false
+        is_pointer<int*>::value;    // true 
+    }
+  ```
+
+## static_assert
+  - compile time
+  - onceki standardlarda 2 parametre zorunlulugu vardi
+  - c++17, string parametre olmazsa olabilir
+  _ex:_
+  ```cpp
+        static_assert(sizeof(T) == 4);    // c++17
+        static_assert(sizeof(T) == 4, "error message");    // before c++17
+  ```
+
+  _ex:_
+  ```cpp
+    template<typename T>
+    void func(T x)
+    {
+        static_assert(std::is_pointer<T>::value);
+    }
+
+    int main()
+    {
+       func(2.3);   // fail 
+       
+       func(nullptr);   // not fail 
+    }
+  ```
+
+  _implementation_
+  ```cpp
+      integral constant ???
+
+
+      using true_type = integral_constant<bool, true>::value;     // true
+      using false_type = integral_constant<bool, false>::value;   // false 
+
+      // true type ve false type sadece bir yazma kolayligi saglar
+  ```
+  > c++20 ile non-type parametre float type olabilir
+
+#
+
+  ex:
+
+    integral_constant<int, 5>{};  // operator tanimi sayesinde compile time da bu ifadeyi int e cevirir
+
+    // operator value_type 
+    constexpr auto val = integral_constant<int, 5>{} + integral_constant<int, 9>{};
+
+> using type = inte..
+
+=>
+  template<typename T>
+  class Myclass {
+    void func()
+    {
+        Myclass<T> x;
+
+        Myclass x;    // Myclass<T> yazmakla ayni sey
+    }
+  }
+
+=>  operator fonksiyon calgirildiginda noexcept value elde edilir
+  constexpr value_type operator()() const noexcept { return value; }
+
+=> value elde etmenin 3 yolu var
+  1.
+  2.
+  3. tur donusturme operator fonksiyonu
+
+#
+    #include<type_traits>
+
+    constexpr integral_constant<int, 5> x;
+    constexpr integral_constant<int, 7> x;
+
+
+    constexpr auto val = x + y;   // tur donusturme operator fonk cagirildi
+    
+    constexpr auto val = x() + y();   // c++14, fonksiyon cagri operatoru 
+
+  ex:
+  ```cpp
+    template<typename T>
+    struct isFloatingPoint : true_type {
+      
+    };
+
+    template<typename T>
+    struct isFloatingPoint2 : false_type {
+      
+    };
+
+    int main()
+    {
+        isFloatingPoint<int>::value;  // true_type::value, true
+        
+        isFloatingPoint2<int>::value;  // false 
+    }
+  ```
+
+  ex:
+  ```cpp
+    template<typename T>
+    struct isFloatingPoint : false_type { };
+
+    template<typename T>
+    struct isFloatingPoint<double> : true_type {}
+
+
+    int main()
+    {
+        
+        isFloatingPoint<int>::value;  // false 
+        
+        isFloatingPoint<double>::value;  // true 
+
+        // bunun su dezavantaji var:
+        // - cv qualification (turun const, volatile bicimleri) icin tanim yok
+
+        isFloatingPoint<const double>::value;  // false, tanimlanmadi
+
+    }
+  ```
+
+> bunlarin const, volatile vs tanimlanabilir.
+> ancak bunun yerine
+
+  ex:
+  ```cpp
+
+    template<typenmae T>
+    constexpr bool IsArray_v = std::is_array<T>::value
+
+    is_array_v<int[10]>
+  ```
+
+  ex:
+  ```cpp
+  #include <type_traits>
+  #include <iostream>
+  
+  template<typename T>
+  struct IsArray : std::false_type {};
+  
+  template<typename T>
+  struct IsArray<T[]> : std::true_type {};
+  
+  template<class T, std::size_t N>
+  struct IsArray<T[N]> : std::true_type {};
+  
+  template<typename T>
+  constexpr bool IsArray_v = IsArray<T>::value;
+  
+  int main()
+  {
+  	std::cout << std::boolalpha;
+  	std::cout << IsArray_v<int> << "\n";
+  	std::cout << IsArray_v<int []> << "\n";
+  	std::cout << IsArray_v<const int []> << "\n";
+  	std::cout << IsArray_v<int [5]> << "\n";
+  }
+  ```
+
+> cv ozelliklerini handle etmek
+  ex:
+    is_pointer
+
+        struct: is_pointer_helper<typename std::remove_cv_<T>;  // cv degerleri icinde true verir
+
+  ex:
+    remove_cv_t<const int >;      // int
+    remove_cv_t<volatile int >;   // int
+    remove_cv_t<const volatile int >;  // int
+
+  ex:
+    is_const?
+
+  ex:
+      template<class Y>
+      struct is_floating_point : std::integral_constant<bool, 
+          std::is_same_v<float, std::remove_cv_t<T>> ||
+          std::is_same_v<double, std::remove_cv_t<T>> ||
+          std::is_same_v<long double, std::remove_cv_t<T>>
+      > {};
+
+  ex:
+      template<typename T, typename U>
+      struct isSame : std::false_type { }
+      
+      template<typename T>
+      struct isSame<T, T> : std::true_type { }
+
+      template<typename T, typenmae U>
+      constexpr bool isSame_v = isSame<T, U>::value;
+
+      isSame_v<int, double>;  // false
+      isSame_v<int, int>;     // true 
+
+  ex:
+      isVoid
+
+# hangi tur aggregate?
+
+    ```cpp
+        class Myclass {};
+
+        is_aggregate_v<Myclass>
+    ```
+
+# compile time da kod secimi:
+  - if constexpr
+  - tag dispatch
+  - SFNIAE
+
+    template<typename Iter>
+    void func(Iter beg, Iter end)
+    {
+        int n = 5;
+
+        // beg += n;
+        // random access iterator icin gecerli
+        // bidirectional iterator icin gecerli degil
+
+        advance(beg, n);  // compile time kod selection
+    }
+
+## advance
+
+  ex:
+  ```cpp
+    vector<unsigned int> ivec(100);
+
+    generate(ivec.begin(), ivec.end(), []{ return rand(); });
+    for(auto val : ivec)
+        std::cout << val << " ";
+
+    generate_n(back_inserter(ivec), 20 []{return rand();});
+    copy(ivec.begin(), ivec.end(), ostream_iterator<int>{cout, " "});
+  ```
+
+---
+> cogu algoritma referans degil
+  callable parametreler genelde soyle
+
+    mt19937 eng;
+    generate_n(back_inserter(ivec), 20, eng);
+  
+  ```cpp
+  template<typenmae T, typenmae Functor>
+  ???
+  ```
+
+>  std::ref sarmalayacisini kullanmaliyiz
+---
+
+advance implementation:
+
+
+1. tag dispatch
+  - function overloading ile yapilir
+
+  typeid(vector<int>:::iterator::iterator_category).name();  // random access iterator tag
+
+
+  ???
+  template<typename Iter>
+  void Advance_impl(Iter& iter, int n, std::random_access_iterator_tag)
+  {
+    //...
+  }
+
+  template<typename Iter>
+  void Advance_impl(Iter& iter, int n, std::bidirectional_iterator_tag)
+  {
+    //...
+  }
+
+  template<typename Iter>
+  void Advance(Iter &iter, int n)
+  {
+      // typename Iter::iterator_category 
+      
+      typename std::iterator_traits<Iter>::iterator_category; // pointer da olabilir
+
+      // 3,. parametrenin tek amaci tag dispatch
+      Advance_impl(iter, n, typenmae std::iterator_traits<Iter>::iterator_category{})
+  }
+
+
+  template<typenmae Iter>
+  struct IteratorTraits {
+      using iterator_category = typenmae Iter::iterator_category;
+      // ...
+  };
+
+  template<typenmae Iter>
+  struct IteratorTraits<T*> {
+      using iterator_category = std::random_access_iterator_tag;
+      // Pointer turleri icinde bir tag saglandi
+  };
+
+
+  iterator_traits<vector<int>>::iterator>::iterator_category
+  iterator_traits<vector<int*>>::iterator>::iterator_category
+
+  ## if constexpr
+
+  template<typename Iter>
+  void Advance(Iter &iter, int n)
+  {
+      if constexpr(std::is_same_v<std::random_access_iterator_tag, typename iterator_traits<Iter>::iterator_category>)
+      {
+          std::cout << "for random access iterator\n";    
+      }
+      else {
+          std::cout << "diger\n";    
+      }
+  }
+
+  ## SFINAE kullan
+    - random access iterator degilse substitituion da hata olacak
+    - enable_if kullan, 3 teknik var
+
+  template<typename Iter>
+  std::enable_if<is_same_v<std::random_access_iterator_tag, typename Iter::iterator_category>>
+  Advance(Iter& iter, int n)
+  {
+     cout << "random access iteraotr"; 
+  }
+
+  template<typename Iter>
+  std::enable_if<is_same_v<std::bidirectional_iterator_tag, typename Iter::iterator_category>>
+  Advance(Iter& iter, int n)
+  {
+     cout << "bidirectional access iteraotr"; 
+  }
+
+
+  list<int> ilist(100);
+  auto list_iter = ilist.begin();
+  Advance(list_iter, 10);
+
+
+ex:
+  template<typename Iter>
+  using IfRandomAccessIterator = ??
+
+ex:
+[way-1]:
+
+  template<typename T>
+  enable_if_t<is_integral_v<T>, T> func(T x)
+  {
+      
+  }
+
+[way-2]:
+
+  template<typename T, typename = enable_if_t<is_integral_v<T>, T>>
+  enable_if_t<is_integral_v<T>, T> func(T x)
+  {
+     // substituion da is_integral_v false ise SFNIAE out olacak 
+  }
+
+[way-3]
+  template<typename T>
+  T func(T x, enable_if_t<is_integral_v<T>, T> *p =  nullptr)
+  {
+     // enable_if false ise, 
+     // substituion da SFNIAE out olacak 
+  }
+======================  
+soru: sunu tek sayi ve cift sayi degerleri icin farkli kodlar olusturabilir misiniz
+ 
+  _ex_:  
+  ```cpp
+    template<int n>
+    void func(int (*p)[n % 2 == 0] = nullptr)
+    {
+       // n tek oldugunda, array size 0 olacak, SFNIAE olacak 
+    }
+
+    template<int n>
+    void func(int (*p)[n % 2 != 0] = nullptr)
+    {
+       // n cift oldugunda, array size 0 olacak, SFNIAE olacak 
+    }
+
+    func<12>();
+    func<7>();
+  ```
+
+# type_traits: remove_reference 
+  -> refrence ligi atar
+  -> const lugu atmaz
+
+  _ex_
+  ```cpp
+      remove_reference<int&>::type  x{}; -> int
+      remove_reference<const int&>::type  x{}; -> const int
+  ```
+  _implementation_
+  ```cpp
+      template<typename T>
+      struct RemoveReference { using type = T; };
+
+      template<typename T>
+      struct RemoveReference<T&>{ using type = T; };
+
+      template<typename T>
+      struct RemoveReference<T&&>{ using type = T; };
+
+      // ex:
+      typename RemoverRefence<int&>::type x{};
+      
+      // typename den kurtulmak icin 
+      template<typename T>
+      using RemoveReference_t = typename RemoveReference<T>::type;
+
+  ```
+
+# examples
+
+  STL/type_traits/transformations:
+
+  ex:
+    - remove_const
+
+  ex:
+    - remove_pointer
+
+  ex:
+    template<typename T>
+    structAddConst {
+
+    };
+
+
+# type traits headerrri incelendi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
