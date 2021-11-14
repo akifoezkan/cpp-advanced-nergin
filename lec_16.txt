@@ -1,0 +1,751 @@
+============== Fold expr. cont. ===========================
+# Types
+  - unary left fold
+  - unary right fold
+  - binary left fold
+  - binary right fold
+
+> her zaman '()' kullanilarak yazilacak. (Buradaki amac oncelik degil, sentazin bir parcasi)
+
+## unary
+  (pack + ...)  -> unary right fold
+                   p1 + (p2 + (p3 + p4))
+
+  (... + pack)  -> unary left fold
+                   ((p1 + p2) + p3) + p4
+
+
+## binary
+  (pack + ... + initial_val)  -> binary right fold
+                                 val + p1 + (p2 + (p3 + p4))
+
+  (initial_val + ... + pack)  -> binary left fold
+                                ((p1 + p2) + p3) + p4 + val
+
+  _ex:_
+    ```cpp
+      template<typename ...TS>
+      auto left_sum(Ts ...args)
+      {
+          return (... && args);
+      }
+
+      cout << leftfunc(true, true, true);   // true
+      
+      cout << leftfunc();   // true, no syntax error 
+                            // && icin garanti bis parametre paketinde true deger garanti altinda
+    ```
+
+  _ex:_
+    ```cpp
+      // binary fold, paketin bos olmasi durumunda sentax hatasi olmamasi garantisi verir?
+
+      template<typename ...TS>
+      auto left_sum(Ts ...args)
+      {
+          return (0, + ...  + args);
+      }
+
+      ??? 
+    ```
+
+## examples: cpp-kursu-kodlar/templates/fold_expressions/
+  ```cpp
+    ???
+  ```
+
+```cpp
+  // ellipsis paketin solunda
+  // unary left fold
+  // operator &&
+  
+  #include <iostream>
+  
+  template<typename... Args>
+  bool all(Args... args)
+  {
+  	return (... && args);
+  }
+  
+  #include <iostream>
+  
+  int main()
+  {
+  	std::cout << std::boolalpha;
+  	std::cout << all(true, true, true, true) << "\n";  // (((true && true) && true) && true) && true
+  	std::cout << all(true, true, true, false) << "\n"; // (((true && true) && true) && true) && false
+  }
+```
+
+```cpp
+  #include <iostream>
+  
+  template<typename First, typename ...Args>
+  void FoldPrintComma(First&& f, Args&&... args)
+  {
+      std::cout << f;
+      auto withComma = [](const auto& v) {
+          std::cout << ", " << v;
+      };
+  
+      (..., withComma(std::forward<Args>(args))); // unary left fold
+  
+      std::cout << '\n';
+  }
+  
+  int main()
+  {
+      FoldPrintComma("hello", 10, 20, 30);
+  
+  }
+```
+
+```cpp
+  /*
+  	bu örnek
+  	unary left fold ile unary right fold arasındaki farkı
+  	göstermeye yönelik.
+  */
+  
+  #include <utility>
+  
+  template<typename ...Args>
+  auto fdiv_r(Args && ...args)
+  {
+  	return (std::forward<Args>(args) / ...);  // unary right fold
+                                              // p1 / (p2 / (p3 / p4))
+  }
+  
+  template<typename ...Args>
+  auto fdiv_l(Args && ...args)
+  {
+  	return (... / std::forward<Args>(args)); // unary left fold
+                                             // ((p1 / p2) / p3) / p4
+  }
+  
+  #include <iostream>
+  
+  int main()
+  {
+  	std::cout << fdiv_r(500, 50, 5, 2) << "\n";   // 20
+  	std::cout << fdiv_l(500, 50, 5, 2) << "\n";   // 1
+  }
+
+```
+
+```cpp
+#include <iostream>
+#include <utility>
+
+//binary left fold
+
+template<typename ...Args>
+void fprint(Args&& ...args)
+{
+	(std::cout << ... << std::forward<Args>(args)) << '\n';
+}
+
+#include <string>
+#include <bitset>
+
+int main()
+{
+	std::string name{ "Necati" };
+	std::bitset<8> bs{ 15u };
+
+	fprint(name, 12, 4.5, "Tahsin", bs);
+}
+```
+
+```cpp
+  // fold expressions
+  // binary left fold
+  // ellipsis paketin solunda binary lefy dold
+  
+  #include <iostream>
+  
+  template<typename T, typename... Ts>
+  auto subtract(T init, Ts... args)
+  {
+      return (init - ... - args); // Binary left fold
+  }
+  
+  int main()
+  {
+      int result = subtract(100, 50, 20, 7); // (((100 - 50) - 20) - 7) = 23
+  
+      std::cout << "result = " << result << "\n";
+  }
+```
+
+```cpp
+#include <utility>
+#include <iostream>
+
+// binary right fold
+// operator +
+// elipsis paketin sağında binary right fold
+
+template<typename ...Args>
+auto sum(Args&& ...args)
+{
+	return (std::forward<Args>(args) + ... + 10);
+}
+
+
+int main()
+{
+	std::cout << sum(12, 4.5, 50L) << "\n";  //  12 + (4.5 + (50L + 10))
+}
+```
+
+```cpp
+#include <functional>
+
+template<typename T>
+void hashCombine(std::size_t& seed, const T& val)
+{
+	seed ^= std::hash<T>()(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+template<typename... Types>
+std::size_t combinedHashValue(const Types&... args)
+{
+	std::size_t seed = 0; // initial seed
+	(..., hashCombine(seed, args)); // chain of hashCombine() calls
+	return seed;
+}
+```
+
+```cpp
+#include <vector>
+
+// bir fonksyona birden fazla parametreyi oush etmek
+// bu örnekte unary right fold olması ile unary left fold olması sonuç açısından bir fark oluturmuyor
+
+//unary right fold
+template<typename T, typename... Args>
+void pushback_left(std::vector<T>& v, Args&& ...args)
+{
+	(v.push_back(std::forward<Args>(args)), ...);
+}
+
+//unary left fold
+template<typename T, typename... Args>
+void pushback_right(std::vector<T>& v, Args&& ...args)
+{
+	(... , v.push_back(std::forward<Args>(args)));
+}
+
+#include <iostream>
+
+int main()
+{
+	std::vector<int> vec;
+	//pushback_left(vec, 2, 3, 5, 7, 11, 13); 
+	pushback_right(vec, 2, 3, 5, 7, 11, 13);
+
+  // sonuc ayni oncelik sirasi
+
+	for (auto i : vec)
+		std::cout << i << "\n";
+}
+```
+
+> yukaridakine alternatif
+
+```cpp
+template<typename T, typename... Args>
+void pushback_left(std::vector<T>& v, Args&& ...args)
+{
+    auto list = {args...};	
+
+    for(const auto& x : list)
+    {
+        v.push_back(x);
+    }
+}
+```
+
+```cpp
+#include <vector>
+#include <iostream>
+
+// returns Lval-ref
+template <typename T, typename ...TS>
+decltype(auto) push_back(std::vector<T>& vec, TS&& ...args)
+{
+	(vec.push_back(std::forward<TS>(args)), ...);
+	return (vec);
+}
+
+int main()
+{
+	std::vector<int> ivec;
+
+	push_back(ivec, 1, 2, 3, 4).push_back(5);
+
+	for (auto i : ivec)
+		std::cout << i << " ";
+}
+```
+
+========================================================================
+```cpp
+    template <typename T>
+    void func(T x)
+    {
+        foo(x);   // dependent expression, 2 asamali name lookup
+                  // 1. instantiation point den bagimsiz
+                  // 2. isim arama ADL e gore point of instatiation da yapilir
+
+        foo();    // error, foo does not depend on template parameter
+        
+        foo(10);  // error, foo does not depend on template parameter
+    }
+
+    class Myclass {};
+
+    template<typename T>
+    void foo(T x);
+
+    int main()
+    {
+        func(Myclass{});
+        
+        func(10); // error, ADL de gecmiyor
+    }
+
+
+
+    // x template parametresine bagli oldugu icin: dependent name
+    // isim arama 2 faz olarak yapilir
+    // 2.faz isim arama instantiation yapilma sirasinda yapilir 
+```
+
+specialization:
+  template fonk. dan parametre turu ile uretilen/yazilan fonk
+  (expliciti/partial specialization farkli seyler)
+
+instantiation:
+  template icin derleyicinin kodu yazmasi
+
+point of instantiation:
+  template instantiate ederken derleyicinin (dosyada) kodu yazdigi yer
+  bazi derleyici kurallari var ama basitce soyle dusunulebuilir:
+    - call edilen fonk
+
+> belirli kontroller point of instantiation da yapilir
+
+Templates [DAvid Vandevoorde, Nicolai Josuttis]
+13.2.1. Argument Dependent Lookup
+page-299
+========================================================================
+
+```cpp
+  bool pred(int i)
+  {
+      return i % 2 == 0;
+  }
+  
+  
+  template<typenmae ... Ts>
+  std::size_t count(Ts... ts)
+  {
+      return (std::size_t(0) + ... + (pred(ts) ? 1 : 0)) 
+  }
+  
+  std::cout << count(4, 1, 6, 3, 8, 10);  //4, counts even nums
+```
+
+========================================================================
+# member function pointer recap
+
+  void func(int);
+
+
+  class Myclass {
+  public:
+      static int foo(int);
+
+      int bar(int);
+      int func(int);
+
+      int x;
+  };
+
+
+  using MyclassFunc = int(Myclass::*)(int);
+
+  using MyclassFunc2 = decltype(&Myclass::foo)
+
+  int main()
+  {
+      // Data member pointer
+
+      int Myclass::*p = &Myclass::x;
+
+      Myclass m;
+
+      m.*p = 90;
+
+      std::invoke(p, m) = 30;
+
+      // bu 2 fonksiyonun turleri ayni
+
+      &func           // void(*)(int)
+
+      &Myclass:foo    // int(*)(int)
+
+      // address of bar is a different type
+
+      int(Myclass::*f)(int) = & Myclass::bar;   // Member function pointer
+
+      MyclassFunc f = &Myclass::bar;
+
+
+      // Member function pointer array
+
+      int (Myclass::*fpa[])(int) =  {&Myclass:bar, &Myclass::func};
+
+      MyclassFunc fa[] = {&Myclass:bar, &Myclass::func};
+
+
+      // operators: .* or ->*
+      // ama bunlar biraz karmasik, tavsiye edilen invoke function i kullanmak (C++17)
+      
+      auto fp = &Myclass::foo;
+      Myclasss mx;
+
+      mx.fp();  // syntax error, fp mx in scopeunda olan bir nesne degil
+
+      auto x = (mx.*fp)(10)
+      
+      mx.*fp(); // error, since () has higher priority then .*
+
+
+      Myclass* p = new Myclass;
+      auto fp = &Myclass::foo;
+      
+      ((*p).*fp)(12);
+      (p->*fp)(12);
+
+
+      // -> invoke butun fonksiyonlari call ededbilir
+      // invoke a yapilan cagri acisindan, nesne yi vermemiz veya adresi vermemiz arasinda bir fark yok
+
+      std::invoke(fp, mx, 10);
+      
+      std::invoke(fp, p, 10);
+      
+      delete p;
+  }
+========================================================================
+terim tekrar:
+  - qualified name (lookup):
+  - unqualified name (lookup):
+
+  sunlar qualified names (nitelenmis isim) 
+    A::x
+    ::b
+    x.y
+    p->y
+
+  unqualified names: eger bu operatorlerin fonksiyonlarin operatoru olarak kullanilmamissa
+
+> ADL in devreye girmedi deger
+> - qualified name  
+> - ??? func(mx); // ADL devereye girer
+> - ??? (func)(mx); // ADL devereye girmez
+
+ex:
+```cpp
+  template<typename T>
+  class Base {
+  public:
+      void func();
+  };
+
+  template<typename T>
+  class Der : public Base<T> {
+  public:
+      void foo()
+      {
+          func();       // error ???
+          this->func(); // ok, qualified name, taban sinifta aranir
+          Base::func(); // ok, qualified name
+      }
+  };
+
+
+  // name lookup acisindan qualified/unqualified name ler arasinda hep fark var
+```
+========================================================================
+# variadic parametre paketi
+  -> expansiion standardlar tarafindan belirli
+
+## ... isimden sonra gelirse mutalaka parametre expansion var???
+```cpp
+template<typenmae ...Ts>
+void func(Ts ...pack) // burada expansion yapiliyor
+{
+    sizeof...(pack);  // expansion
+}
+```
+
+## temel patternler:
+
+1. sinif sablonun da arguman listesi olarak kullanilmasi
+
+  ```cpp
+    template<typename ...Types>
+    class Myclass{
+    public:
+        Myclass()
+        {
+            std::cout << typeid(Myclass).name();
+        }
+    };
+
+    template<typename ...Ts>
+    void func(Ts ...args)
+    {
+        Myclass<Ts...> x;
+        
+        // Myclass<Ts...> x;
+    }
+
+    func(1, 2.3, "dogu");
+  ```
+
+## cpp-kursu-kodlar/templates/variadic_templates/
+
+```cpp
+#include <iostream>
+
+template<typename ...TS>
+class Var {
+    Var()
+    {
+        std::cout << typeid(Var).name();
+    }
+};
+
+template <typename ...Types>
+class Myclass : public Var<Types...> {
+public:
+	constexpr static size_t size = sizeof...(Types);
+};
+
+int main()
+{
+	constexpr auto n = Myclass<int, double>::size;
+}
+```
+
+```cpp
+#include<tuple>
+
+template<typenmae ...Ts>
+class Nec : public std::tuple<Ts...> {
+
+};
+
+Nec<int, long, double>; // aslinda tuple<int, long, double> uzerinden elde edilecek
+```
+
+```cpp
+???
+```
+
+```cpp
+#include <iostream>
+
+struct X {
+	X(int i)
+	{
+		std::cout << "X(int i) i = " << i << '\n';
+	}
+};
+
+struct Y {
+	Y(int i)
+	{
+		std::cout << "Y(int i) i = " << i << '\n';
+	}
+};
+
+struct Z {
+	Z(int i)
+	{
+		std::cout << "Z(int i) i = " << i << '\n';
+	}
+};
+
+
+template <typename ...Types>
+class A : public Types ... {  // multiple inheritance: public X, public Y, public Z
+public:
+	A() : Types{ 0 }... {
+      // base class objects, 0 ile init. yapilir
+  }
+};
+
+
+int main()
+{
+	A<X, Y, Z> ax;
+}
+```
+
+```cpp
+//pack expansion as template argument lists
+
+#include <tuple>
+
+template<class A, class B, class... TS>
+void func(A arg1, B arg2, TS ...pack)
+{
+    std::tuple<A, B, TS...> t1;  // std::tuple<A, B, E1, E2, E3>
+    std::tuple<TS..., A, B> t2;  // std::tuple<E1,E2,E3,A,B>
+    std::tuple<A, TS..., B> t3;  // std::tuple<A,E1,E2,E3,B>
+    //...
+}
+```
+> pack expansion icin type parametresi olmasi gerekmiyor
+
+```cpp
+  template<std::size_t ...n>
+  class Mylass {
+    Myclass()
+    {
+        std::cout << typeid(Myclass).name();
+    }
+  };
+
+  template<std::size_t ..n>
+  void func()
+  {
+    Myclass<n...> x;
+  }
+
+  func(1, 3, 5, 7);
+```
+
+=========================== CTAD17 =========================================
+```cpp
+#include<vector>
+#include<optional>
+#include<thread>
+#include<mutex>
+
+mutex m;
+
+int main()
+{
+    // asagidaki ornekler class template (CTAD)
+    // c++17 oncesi hepsi syntax error idi, template argumanlar kullanilmadi
+    pair p{12, 45};
+
+    vector vec{1, 3, 5, 7};
+
+    std::optional x{34.5};
+
+    atomic a{90};
+
+    lock_guard guard{m};
+
+    complex c{1.4, 9.5};
+
+    initializer_list mylist{1, 3, 6, 7};
+
+    std::array x{2L, 4L, 8L};
+
+    // Deduction guides
+
+    list ls(vec.begin(), vec.end());    // list:int
+    
+    list l{(vec.begin(), vec.end()};    // value_type: iterator
+
+}
+```
+
+## class templates
+  - derleyici sinif kodu instantiate edecek  
+    ex: Myclass<int>, Myclass<double> farkli siniflar
+
+  - c++17: class template argument deduction eklendi.
+    type i direk yazmak zorunda degiliz
+    template<typenmae T> class Myclass {};
+
+  - parameter types: type, non-type, template template parameter
+    bu turlericin variadic parametre paketi tanimlanabilir
+
+    ex:
+```cpp
+      template<Typename ...Types>
+      template<int ...vals>
+      template<template<typenmae, typename> typenmae ...Cons>
+      template<template<typename...> typenmae ...Cons>
+```
+  - template T turunden elemanlar olusturabiliriz.  
+    
+    ```cpp
+      template<typename T>
+      Myclass {
+          void func(T x);
+          T foo(T x);
+
+          void func(T x, int x);  // temploid (yayginlasmakta olan bir terim)
+                                  // func bir tempalte function degil
+                                  // ama sinif template class
+
+          template<typename U>
+          void func(U x);         // member template function 
+      }
+
+    ```
+
+    > sinifin cagirilmayan uye fonksiyonlari icin kod yazilmayacak
+    > - kod ekonomisi
+    > - oyle bir T turu olsun ki bazi uye fonksiyonlar uygun olmayabilir.
+        bunlar cagirilmadigi zaman instantiation yapilmayacagi icin sorun olmayacak
+
+    
+    ```cpp
+      template<typename T>
+      Myclass {
+      public:
+          void func(Myclass);
+          
+          //template<typename U>
+          //void func(U x);         // bu olsaydi farkli classlar birbirine atanabilirdi 
+      }
+
+      Myclass<double> x;
+      Myclass<int> y;
+
+      x.func(y);  // error, sinifin farkli specializationlari farkli turler
+    ```
+
+    ```cpp
+      bitset<32> x;
+      bitset<16> y;
+
+      x = y;  // error, types are different
+
+    ```
+    
+    ```cpp
+    clas Mycalss
+    {
+    public:
+        template<typename T>
+        operator T() const;
+    }
+
+    Myclass mx;
+
+    int ival = mx;
+    double dval = mx;
+    ```

@@ -1,0 +1,555 @@
+=> tarih degisikligi oldu bazi farkli konular islenecek:
+
+# diziler
+
+_ex:_
+  ```cpp
+    int a[10] = {0};
+
+    a     // array decay -> int*
+
+    &a    // pointer to array: int(*)[10]
+
+    int(&r)[10] = a;    // r is an array reference
+    int(*p)[10] = &a;   // p is a pointer to array 
+
+    *p;   // a nin kendisi: 
+
+
+    for(int i = 0; i < 10; ++i) {
+        (*p)[i] = i;
+    }
+
+    // reference semantik karsiligi
+    for(int i = 0; i < 10; ++i) {
+        std::cout << r[i] << " ";
+    }
+
+
+    // auto ???
+  ```
+
+_ex:_
+  ```cpp
+    // bir fonksiyonun dizinin ilk adresini almasi
+    void func(int* p, size_t size);
+
+    int a[10] = {0};
+    func(a, 10);
+
+    // ???
+    void func(int (*p)[10]);
+
+    int a[10] = {0};
+    func(a, 10);
+  ```
+  > C ve C++ da fonk parametresi ve gerid onusu degeri array olamaz
+  > C++ da fonk parametresi array reference olabilir.
+  > ??
+  > pointer to array ikisinde de ilabilir
+
+_ex:_
+  ```cpp
+    // C de geri donus degeri pointer to array
+
+    int a[10] = {0};
+
+    int(*bar(void))[10]
+    {
+        return &a;
+    }
+
+    int(*p)[10] = bar();
+
+
+    // typedef
+    typedef int intarr10[10];
+    // suing inta10 = int[10];
+
+    inta10* f(void)
+    {
+        return &a;
+    }
+
+    inta10 *p = f();
+  ```
+
+_ex:_
+  ```cpp
+    // C++ auto ile hayati kolaylastirir
+
+    int a[10]{};
+    auto ptr = &a;
+    auto& r  = a;
+
+    auto foo()
+    {
+        return &a;  // pointer to aray
+
+        // return a; // array decay
+    }
+  ```
+
+_ex:_
+  ```cpp
+      // pointer arithmetic
+
+      int a[64] = {0};
+      
+      cout << a << "\n";
+      cout << a + 1<< "\n";   // sizeof(int) kadar fark var (4)
+
+      cout << &a << "\n";
+      cout << &a + 1 << "\n"; // sizeof(int) * 64
+  ```
+
+_ex:_
+  ```cpp
+    // C pointer arithmetic: pitfall
+
+    int a[10][20];  // a oyle bir diziki, elemanlari 20 elemani olan diziler
+                    // C dizileri 1D gorur
+
+    int* p = a; // error adresler uyumsuz
+    int(*p)[20] = a;    
+    int(*p)[20] = &a[0];    
+
+    int* p = &a[0][0];  // ok
+    int* p  = a[0];     // array decay for the 2nd dimensionz
+    int *p  = (int*)a
+
+    // note that Do not use  C-style type cast in C++
+    // instead static_cast, const_cast, etc
+  ```
+
+_ex:_
+  ```cpp
+    // oyle bir dizi olsun ki bu ??
+    // C de mumkun degil 
+
+    // a and b are different types
+    int a[10];
+    int b[20];
+  ```
+
+-> ayrildim buralarda
+
+# Order of evaluation
+sequence operators: && || ,(operator comma)
+
+_ex:_
+  ```cpp
+    int x = 10;
+
+    int x = x++;  // C++17 oncesi undefined behaviour
+  ```
+
+_ex:_
+  ```cpp
+    func(exp1, exp2, exp3); (derleyicinin order of evalution deperns on the compiler)
+  ```
+
+_ex:_
+  ```cpp
+    class Myclass {
+    public:
+        Myclass& foo(int)
+        {
+            return *this;
+        }
+
+        Myclass& foo(double)
+        {
+            return *this;
+        }
+    };
+
+    int get_i { std::cout << "get_i\n"; return 1;};
+    int get_d { std::cout << "get_d\n"; return 2;};
+
+    int main()
+    {
+        Myclass mx;
+
+        // get_i nin get_d den once cagirilma garantisi var mi?
+        // C++17 sonrasi: var
+        // C++17 oncesi: yok 
+
+        mx.foo(get_i()).func(get_d());
+
+        cout << get_i() << get_d() << "\n";
+    }
+  ```
+## hangi operatorler, sunlar icin garanti var:
+  - a.b : sol operand, sag operand
+  -  <<
+  -  >>
+  - a[]
+    _ex:_ ``a.b.c.d  // soldan saga yapilacak``
+
+    _ex:_
+      ```cpp
+        // interview question: operator onceligi ve islemin hangisinin once yapilmasi
+    
+        int f1();
+        int f2();
+    
+        int main()
+        {
+            int x = f1() + 5 * f2(); // hangi ifade once cagirilir, derleyici bilir
+    
+            // operator* in operator+ dan oncelikli olmasinin hangi expression in 
+            // evaluate edilecegi ile bir ilgisi yok
+        }
+      ```
+## cpp reference order of evaluation: 
+ todo: copy to here
+
+- exp(art, arg), expression once
+
+- new T(expr1, expr2, expr3)  // operator new fonksiyonu cagirilir
+                              // return address ctor a cagirilir ???
+
+    c++17 sonrasi sunun garantisi var:
+      once operator new, sonra argumanlar evaluate edilecek
+      -> exception handling kacirilabilir:
+
+- atama operatoru:
+  
+  [standard-20]: sag tarafindaki ifade hesaplanacak, yan etkileri tamamlanacak sonra E1 calistirilacak
+    E1 = E2;
+    E1 @= E2;
+
+=================================== Templates cont. ========================
+# reminder: ???
+
+  Myclass
+
+
+## template explicit instantiation
+  -> derleyici template koddan faydalanarak sinifin member function ini yazar
+
+> incomplete type in yeterli oldugu yerde derleyici instantiation yapmaz 
+_ex:_
+  ```cpp 
+    template<typenmae T>
+    class Myclass;
+
+    Myclass<int>* p;  // derleyicinin specialization olusturmasina gerek yok, size belli
+  ```
+
+_ex:_
+  ```cpp
+    template<typenmae T>
+    class Myclass {};
+
+    Myclass<int>* p;  // derleyicinin specialization olusturmasina gerek yok, size belli
+  ```
+### point of instantiation
+  - derleyiciden fiilen specialization i olusturmasini istiyoruz
+
+  _ex:_
+    ```cpp
+      template<typename T>
+      void func(T)
+      {}
+  
+      template void func<int>(int);   // explicit instantiation
+      template void func<>(double);   // explicit instantiation
+      template void func(float);      // explicit instantiation
+
+      // derleyici func in int, double, float acilimlarini bizim icin tanimlayacak
+  ```
+
+  _ex:_
+    ```cpp
+      template<typename T>
+      class Myclass{
+      public:
+          void func(T) { ... };
+          void foo(T) { ... };
+      };
+
+      template void Myclass<int>::func(int);  // ??
+
+      template Myclass<int>;  // tanim
+    ```
+
+#### Nerede gerekir?
+  - template funcs header da bulunmali.
+    Bu yuzden bu header compile edilen her kaynak dosya icin ayri ayri instantiate edilecek (yazilacak, compile edilecek) ???
+    Bu seneryoda tekrar tekrar fonk.lar parse edilir, instantiate edilir, compile edilir.
+    Bu yuku nasil azaltabiliriz:
+
+    * Tool-1: Manual instantiation
+      -> 2. bir dosya olustur: deneme.hpp 
+      ->    template function tanimini buraya koy
+      -> 3. bir dosya olustur: deneme.cpp
+            explicit instantiation i buraya koy
+
+            derleyici deneme.cpp deki tanimi gordugu icin, 
+
+      _ex:_
+        ```cpp
+
+          // => dosya: deneme.hpp, 
+
+          template<typenmae T>
+          void foo(T x);
+
+          // => dosya: deneme.cpp, 
+          //    sadece explicit instantationlari koy
+          //    - bu deneme. hpp nin icine de yazilabilir ancak kod kalabaligi na sebep olabilir
+          //    - hangi spec. logunun tutulmasi zor olabilir
+
+          #include "deneme.hpp"
+
+          template void foo(int);
+          template void foo(double);
+          template void foo(long);
+        ```
+
+        Problem:
+          hala parse edilecek 
+
+    * explicit template instantiation declaration
+      - use extern
+      - derleyici bu bildirimi gordugunde, bu specialization icin instatnation yapma
+      -  baska dosyada bunun tanimi yapildi diyoruz
+
+    => sayfa 350
+
+      _ex:_
+        ```cpp
+            // dosya: T.hpp
+
+            template<typenmae T> void f()
+            {
+                // ...
+            }
+
+            extern template void f<int>();    // declared but not defined
+            extern template void f<float>();
+
+            // dosya: T.cpp
+            
+            template void f<int>();
+            template void f<float>();
+
+
+            // src dosyalari, birden fazla yukaridaki kodu include eder
+            // ex dosya:
+        ```
+
+        _ex:_
+          ```cpp
+          // kitaptaki kod
+
+
+          ```
+-> ???
+
+## stack
+  _ex:_
+    ```cpp
+      #include <deque>
+
+      template<typename T, typename C = std::deque<T>>
+      class Stack {
+      private:
+          C mcon;
+      };
+
+      Stack<int, std::vector<int>>
+
+    ```
+
+    ===========================================================================
+    => Hangi seneryado deque degil de baska bir allocator (ex vector) kullanalim
+      - elimizde bir container ver, oradaki degerleri kullanmak istiyoruz
+
+    deque<int> mydeque{2, 5, ...};
+    stack<int> s{mydeq};  // direk yukaridaki deque stack de kullaniliyor 
+
+    diyelim ki elimizde zaten vector var, biz bu vector deki elemanlari kullanark bir stack olusturmak istiyoruz
+
+    stack<int> s{myvec};  // syntax error
+    stack<int, vector<int>> s{myvec};
+    ===========================================================================
+
+---
+soru:
+  Neden C++ da pop fonsiyonunun interfacei soyle:
+      T pop();  degil, exception safety saglanamk icin
+    void pop(); boyle
+
+soru:
+  -> stack den kalitimla yeni sinif elde edildiginde inherit eden eleman 
+     veri elemanina erisebilir bu yuzden veri elemani protected
+
+  class Mystack : public std::stack<int> {
+  public:
+      void foo()
+      {
+          c.
+      }
+  };
+---
+
+> aradan sonra: hata: explicit instatnation + explicit specialization
+
+_ex:_
+  ```cpp
+    template<typename T> 
+    class Stack {
+    public:
+        void pop();
+        void push(const T&);
+
+        bool empty() const
+        {
+            return c.empty();
+        }
+
+        const T& top();
+         
+    private:  // normalde protected
+        std::vector<T> c;
+    };
+
+    template<typename T>
+    void Stack<T>::pop()
+    {
+        Stack<T> x;   // Stack burada bir daha kullanildi
+
+        Stack  x;     // yine ayni anlam: Stack<T> 
+    }
+
+
+    // bu sadece class scope icin boyle
+    template<typenmae T>
+    void foo (Stack<T> x){}   // ok
+
+    template<typenmae T>
+    void foo (Stack x){}   // error, foo is a global function
+
+    template<typenmae T>
+    void Stack<T>::pop()
+    {
+        assert(!c.empty());
+        c.pop_back();       // kodun legal olmasi icin pop_back fonk olmasi lazim
+    }
+
+    ....
+  ```
+
+soru: 
+  - inline anahtar sozcugunu kullanmamak ODR i ihlal eder mi?
+    hayir template member function
+
+  - inline kullanmak ve kullanmamak arasinda bir fark var mi?
+    fark var ama ODR ile ilgili degil.
+    optimizasyon manasini korumus oluyoruz.
+
+=> son 9 dakikayi yazmadim 
+template argument deduction
+CTAD (C++17)
+deduction guides
+  - implicit
+  - explicit
+  - c++20, aggregate
+
+template type parameter
+template non-type parameter
+template template parameter
+
+default argument
+explicit specialization
+partial specialization
+explicit instantiation (definition)
+explicit instantiation declaration 
+
+friend declararions
+
+variadic template
+
+
+_ex:_
+  ```cpp
+  ```
+
+_ex:_
+  ```cpp
+  ```
+
+_ex:_
+  ```cpp
+  ```
+
+_ex:_
+  ```cpp
+  ```
+
+_ex:_
+  ```cpp
+  ```
+
+_ex:_
+  ```cpp
+  ```
+
+_ex:_
+  ```cpp
+  ```
+
+_ex:_
+  ```cpp
+  ```
+
+_ex:_
+  ```cpp
+  ```
+
+_ex:_
+  ```cpp
+  ```
+
+_ex:_
+  ```cpp
+  ```
+
+_ex:_
+  ```cpp
+  ```
+
+_ex:_
+  ```cpp
+  ```
+
+_ex:_
+  ```cpp
+  ```
+
+_ex:_
+  ```cpp
+  ```
+
+_ex:_
+  ```cpp
+  ```
+
+_ex:_
+  ```cpp
+  ```
+
+_ex:_
+  ```cpp
+  ```
+
+_ex:_
+  ```cpp
+  ```
+
+_ex:_
+  ```cpp
+  ```
