@@ -1,0 +1,1041 @@
+=================== class template type deduction ====================
+# C++20: automatic type deduction for classes
+  -> deduction guide: dogru tur cikarimini 
+
+  > argumanlarin bir kismini bildirmek gibi bir arac yok
+
+ _ex_ 
+ ```cpp
+  template<typenmae T, typenmae U>
+  class Myclass {
+  public:
+    Myclass(T, U);
+  };
+
+  Myclass<int, double> x(10, 4.5);  // Ok
+  Myclass x(10, 4.5);  // Ok
+  
+  Myclass x<long>(10, 4.5);  // Error, ya tamamen ya hic
+ ```
+
+ _ex_ 
+ ```cpp
+    array x{1, 3, 4, 7};
+    
+    array x{1, 3, 4.6, 7};        // error 
+    array<int> x3{1, 3, 4.6, 7};  // error, array has 2 template parameters
+ ```
+
+== reminder: aggregate type
+ _ex_ 
+ ```cpp
+    struct Data{
+      int ival;
+    };
+    
+    Data mydata { 12 };
+    Data mydata = { 12 };
+
+    Data mydata = 12; // error
+  ```
+
+ _ex_ 
+ ```cpp
+
+    // aggregate type
+    template<typenmae T>
+    struct Data {
+        T val;
+    };
+
+    ??
+    ??
+    Data<int> z = 56;
+
+
+    Data x{234};    // Error
+    Data x{2.34};   // Error
+ ```
+
+  > Until 2017 we can solve this issue by deduction guides
+
+ _ex_ 
+ ```cpp
+    // aggregate type 
+    template<typenmae T>
+    struct Data {
+        T val;
+    };
+
+    // deduction guide
+    template <typenmae T>
+    Data(T) -> Data<T>;
+
+    Data x{234};    // 
+    Data x{2.34};
+ ```
+akif: yukaridaki ornekleri duzenle
+
+ _ex_ 
+ ```cpp
+  vector vec{1, 2, 3, 4}; // ok
+  
+  auto ptr = new vector {1, 2, 3, 4}; // ok
+
+  //function-style cast
+  auto x  = optional(12);
+ ```
+
+ _ex_ 
+ ```cpp
+    ??
+    vector vec
+    list ls
+    set s1    // default tur elemanlari CTAD i engellemiyor
+
+    set s2{ {2, 4, 5, 8}, [](int a, int b) { return b < a;}};
+        // lambda: predicate for comparison
+ ```
+
+ > reminder: set for the baove example
+ _ex_ 
+ ```cpp
+    bool myfunc(int x, int y);
+
+    set<int, decltype(&myfunc)> myset;  // ok
+    
+    set<int, decltype(&myfunc)> myset(myfunc);  // ok
+
+    myset.insert(12);
+
+    auto f = [](int a, int b) {return a > b; };
+    
+    set<int, decltype(f)> myset;      // C++17: syntax error (lambda default ctor is deleted)
+                                      // c++20: ok for stateless 
+    set<int, decltype(f)> myset(f);   // C++17: ok 
+
+    
+    auto g = [ival](int a, int b) {return a > b; };
+    set<int, decltype(f)> myset;      // C++20: syntax error ( not a stateless lambda}
+
+
+ ```
+
+ _ex_ 
+ ```cpp
+    optioanl op{ 23 };  // vocabulary type
+    atomic ato{ 56 };
+    tuple tx{2, 5.6, "ali"};
+    lock_guard guard{ mt };   // ?? ...
+    complex c{ 1.4, 7.87 }    // complex<double>
+ ```
+
+ _ex_ 
+ ```cpp 
+    // cpp-kursu-kodlar/templates/ctad/ctad_09.cpp
+    #include <functional>
+    
+    int foo(int);
+    double bar(double, double);
+    
+    struct Functor {
+    	void operator()(int);
+    };
+    
+    int main()
+    {
+    	std::function f1{ foo };      // std::function<int(int)> foo
+    	std::function f2{ &foo };
+    	std::function f3{ bar };
+    	std::function f4{ Functor{} };
+    	std::function f5{ [] (int x, int y) {return x + y; }};
+    }
+ ```
+---
+function address vs
+Reminder:
+ _ex_ 
+  ```cpp
+    int foo(int);
+
+                      // auto ya karsilik gelen tur
+    auto x = foo;     // int(*)(int)
+
+    auto &y = foo;    // int(int), y nin turu: int(&)(int)
+
+    auto &z = &foo;   // syntax error
+                      // &foo -> PR value
+                      // sol taraf referansina sag tarafa degeri ile ilk deger verme hatasi
+  ```
+
+ _ex_ 
+ ```cpp
+  template<typenmae T>
+  void func(T& f)
+  {
+      // TypeTeller<T> x;
+
+      // type of T int(int);
+
+      f(12);
+
+      std::cout << typeid(decltype(f)).name() << "\n";
+  }
+
+  int foo(int) { return 1}; 
+
+  func(foo);
+ ```
+
+ _ex_ 
+ ```cpp
+    using ftype = int(int);
+
+    int foo(int);
+
+    ftype* fptr = foo;
+    int(*fp)(int) = foo
+
+    std::function<ftype> ??
+ ```
+---
+
+Reminder: Most vexing parse
+  _ex_ 
+  ```cpp
+    class A{};
+
+    class Myclass {
+    public:
+      Myclass(A);
+
+      void func();
+    };
+
+    int main() {
+      Myclass m(A());   // Most vexing parse: A() is a function declaration
+                        // function name: m
+                        // return type: Myclass
+                        // parameter: function pointer A(*)() 
+                        // Myclass m(A (*)());
+
+      m.func();         // error
+
+
+      cout << typeid(m).name();   // int[] -> array pointer
+
+
+      // How to save from most vexing parse
+      Myclass m((A()));   // A() is not a func declaration
+
+      // Modern C__
+      Myclass m{A()};
+      Myclass m(A{});
+                              
+    }
+  ```
+
+// think cell 
+// https://stackoverflow.com/jobs/36832/c-plus-plus-developer-in-berlin-120-000-euro-per-year-think-cell
+
+  _ex_ 
+  ```cpp
+    // both in C and C++
+
+    void func(int[] p);
+    
+    void func(int* p);    // ? bunlar ayni sey
+
+    void func(int f(int));  // function pointer
+
+    int foo(int(*p)[20]);   // int(*)[20] parametre
+    int a[10][20];
+    foo(a);
+
+    // su ikisi yani sey:
+    int foo(int p[10][20]);   //[10] is ignored
+    int foo(int p[20]);
+  ```
+---
+ 
+  _ex_ 
+  ```cpp
+      ???
+  ```
+ 
+  _ex_ 
+  ```cpp
+      int main()
+      {
+      	std::complex c1{ 1.4f, 2.2f }; // std::complex<float>
+      	std::complex c2(2.8, 6.3); // std::complex<double>
+      	std::complex c3 = 1.2; // std::complex<double>
+      	std::complex c4 = { 4.7 }; // std::complex<double>
+      	//std::complex c5{5,3.3}; // geçersiz, arguman types are different
+      
+      }
+
+      /*
+      namespace std {
+      	template<typename T>
+      	class complex {
+      		constexpr complex(const T& re = T(), const T& im = T());
+      		//...
+      	}
+      };
+      */
+  ```
+ 
+  _ex_ 
+  ```cpp
+    template<typename T, int SIZE>
+    class MyClass {
+    public:
+    	MyClass(T(&)[SIZE]) {
+    		...
+    	}
+    };
+    
+    int main()
+    {
+    	MyClass mc("necati"); // T => const char SIZE ==> 7
+    }
+  ```
+ 
+  _ex_ 
+  ```cpp
+      #include <vector>
+      
+      template<typename... Args>
+      auto make_vector(const Args&... elems) {
+      	return std::vector{ elems... };   // pack expansion
+      }
+      
+      int main()
+      {
+      	std::vector<int> v{ 1, 2, 3 };
+      	auto x1 = make_vector(v, v);  // vector<vector<int>>
+      	auto x2 = make_vector(v);     // vector<int> or vector<vector<int>> => compiler dependent
+      }
+      
+      //Currently, different compilers handle this differentlyand the issue is under discussion.
+  ```
+ 
+  _ex_ 
+  ```cpp
+    #include <iostream>
+    
+    template <typename T>
+    struct Nec {
+    	Nec(T) {
+    		std::cout << "primary template\n";
+    	}
+    };
+    
+    template <>
+    struct Nec<int> {
+    	Nec(const double& x)
+    	{
+    		std::cout << "specialization for Nec<int>\n";
+    	}
+    };
+    
+    int main()
+    {
+    	Nec x{ 324 };   // specialization, T=int
+                      // cikarim primary template e gore yapilir
+                      // instantiation dan once spec. secilir
+    }
+  ```
+ 
+  _ex_ 
+  ```cpp
+    // function style casting
+    ???
+
+    auto guard = std::lock_guard
+  ```
+ 
+  _ex_ 
+  ```cpp
+      #include <vector>
+      
+      
+      int main()
+      {
+      	using namespace std;
+      	
+        vector<pair> vec1{ {12, 5.6}, {23, 5.1}, {5, 1.1} }; //gecersiz
+                    // icerideki pair icin automatik deduction yapilmaz
+      	
+        vector<pair<int, double>> vec2{ {12, 5.6}, {23, 5.1}, {5, 1.1} };
+
+      	vector vec3{ pair<int, double>{12, 5.6}, pair<int, double>{23, 5.1}, pair<int, double>{5, 1.1} };
+      }
+  ```
+ 
+  _ex_ 
+  ```cpp
+    // cfunction style casti, 16
+
+    template<class T>
+struct A {
+	A(T, T);
+};
+
+int main()
+{
+	auto pa = new A{ 1, 2 }; //new expression
+	auto z = A(1.2, 5.6);  //function-style cast
+}
+  ```
+ 
+  _ex_ 
+  ```cpp
+    ??
+
+    Nec nec2;     // Nec<double>, varsayilan tur
+
+  ```
+ 
+  _ex_ 
+  ```cpp
+      ??
+      pair z = {}
+
+      //deductoiin guide?
+  ```
+
+## deduction guides
+20.50
+
+  _ex_ 
+  ```cpp
+    template<typenmae T>
+    clas Myclass{
+    public:
+        Myclass(T*);
+    };
+
+    Myclass(const char*) -> Myclass<std::string>;
+
+    int main() {
+        Myclass m("necati");                // T = const char* 
+        Myclass<string> m3("necati");       // R =string
+        
+        Myclass<const char*> m2("necati");  // T = string olsun istiyoruz
+                                            // we defined the deduction guide above
+    } 
+  ```
+
+# cpp kod examples
+  _ex_ 
+  ```cpp
+      template<typename T>
+      struct Nec
+      {
+      	T str;
+      };
+      
+      Nec(const char*)->Nec <std::string>;
+      
+      int main()
+      {
+      	Nec nec{ "Necati Ergin" };
+      
+      	std::cout << std::boolalpha << (typeid(nec) == typeid(Nec<std::string>));
+        // aggregate type
+      }
+  ```
+ 
+  _ex_ 
+  ```cpp
+      template<typename T>
+      class Nec {
+      public:
+      	Nec(T param) : mx(param) { }
+      private:
+      	T mx;
+      };
+      
+      template<typename T> 
+      Nec(T) -> Nec<T>; // deduction guide (bu zaten default durum)
+      
+      Nec x{5 };          // Nec<int> x{5};
+      Nec y(3.3);         // Nec<double> y(3.3);
+      auto z = Nec{ 4L};  // auto z = Nec<long> {4L};
+
+      Nec<int>* p = &x; // ok
+      auto p = &x;      // ok
+      Nec* p = &x;      // gecersizi, bir instnatiation olmasi lazim 
+
+      Nec n1{ 'A' }, n2{ 23 }; //gecersiz, her biri icin cikarimin ayni olmasi gerekir  
+  ```
+ 
+  _ex_ 
+  ```cpp
+      #include <type_traits>
+      #include <iostream>
+      #include <string>
+      
+      template <typename T>
+      struct Sum {
+      	T value;
+
+      	template <typename ... Types>
+      	Sum(Types&& ... values) : value{ (values + ...) } {}
+
+        // T turunden veri elemanini init etmek icin bir fold ifadesi kullanilmis
+      };
+      
+      template <typename ... Types>
+      Sum(Types&& ... ts)->Sum<std::common_type_t<Types...>>;
+
+      // deduction guide variadic parametreye sahip
+      // birden fazla tur varsa bunlarin common_type_t ini kullanilacak
+      
+      int main()
+      {
+      	Sum s{ 1u, 2.0, 3, 4.0f };  // T = double 
+
+      	Sum strsum{ std::string{"abc"}, "def" };  // T = std::string
+
+      	std::cout << s.value << '\n' << strsum.value << '\n';
+      }
+  ```
+---
+reminder: common_type_t
+  _ex_ 
+  ```cpp
+      common_type<int, double>::type x;     // double
+      common_type<int, char>::type x;       // int 
+      common_type<int, unsigned>::type x;   // unsigned 
+  ```
+---
+ 
+  _ex_ 
+  ```cpp
+      template<typename T1, typename T2>
+      struct Pair {
+      	T1	first;
+      	T2	second;
+      	Pair(const T1& x, const T2& y) : first{ x }, second{ y } {}
+
+        // because of the reference here, there is decay, thus
+        // T1-> const char*, T2 -> const char*
+        // not: T1 = const char[4], const char[8]
+      };
+      
+      // deduction guide for the constructor:
+      template<typename T1, typename T2>
+      Pair(T1, T2)->Pair<T1, T2>;
+      
+      int main()
+      {
+      	Pair p1(12, 45);            // Pair<int, int>
+      	
+        Pair p2("ali", "batuhan");  // Pair<const char *, const char *> (deduction guide)
+      }
+  ```
+ 
+  _ex_ 
+  ```cpp
+
+
+   dg_06
+  // deduction guide explicit oldugu icin explicit ctor gibi davranir
+    
+  ```
+ 
+  _ex_ 
+  ```cpp
+    template<typename T1, typename T2>
+    struct pair {
+    	constexpr pair(const T1& x, const T2& y); 
+    };
+    
+    template<typename T1, typename T2>
+    pair(T1, T2)->pair<T1, T2>;			// deduce argument types by-value
+    
+    pair px{ "necati", "ergin" }; // const char[3] and const char[6]
+    pair<const char*, const char*> py{ "necati", "ergin" };
+  ```
+ 
+  _ex_ 
+  ```cpp
+      template<typename... Types>
+      class Tuple {
+      public:
+      	constexpr Tuple(const Types&...); // take arguments by-reference
+      	
+        template<typename... UTypes>
+        constexpr Tuple(UTypes&&...);
+      	//...
+      };
+      	
+      template<typename... Types>
+      Tuple(Types...) -> Tuple<Types...>; // deduce argument types by-value (not by-ref)
+      
+      int main()
+      {
+      	Tuple tx{ 42, "hello", nullptr }; 
+
+        // no dedcution guide: ???
+        // with deduction guide: >>>
+      }
+  ```
+
+  _ex_ 
+  ```cpp
+      // std::Vector
+
+      template< class InputIt,
+          class Alloc = std::allocator<typename std::iterator_traits<InputIt>::value_type>>
+          vector(InputIt, InputIt, Alloc = Alloc())
+            -> vector<typename std::iterator_traits<InputIt>::value_type, Alloc>;
+          
+      #include <vector>
+      
+      int main() {
+         std::vector<int> v = {1, 2, 3, 4};
+      
+         // uses explicit deduction guide to deduce std::vector<int>
+         std::vector x(v.begin(), v.end());
+      
+         // deduces std::vector<std::vector<int>::iterator>
+         // first phase of overload resolution for list-initialization selects the candidate
+         // synthesized from the initializer-list constructor; second phase is not performed and
+         // deduction guide has no effect
+         std::vector y{v.begin(), v.end()};
+      
+      
+         std::vector y{v.begin(), v.end()}; // init list ctor, deduction guide devreye gitmedi
+                                            // std::vector<std:vector<int>::iterator> y;
+      }
+
+  _ex_ 
+  ```cpp
+      // c++17 CTAD oncesi, hack to deduce arguments
+
+      template<typenae T>
+      class Myclass{ };
+
+      template<typename T>
+      Myclass<T> make_myclass(Tx)
+      {
+          return Myclass<T>(x);
+      }
+
+      int main()
+      {
+          make_myclass(12);
+      }
+  ```
+============================================================================
+# friend bildirimi
+
+## friend bildirimi nedir  
+  - sinifin private bolumune erisim hakki verir
+  - data hiding faydalari icin  dogru sekilde kullanilmali 
+
+ 
+  _ex_ 
+  ```cpp
+    class Myclass {
+    private:
+        friend void foo();
+        void func();
+    };
+
+    void foo()
+    {
+        Myclass mx;
+
+        mx.foo();
+    }
+  ```
+
+> interview soru: neden var, data hiding ilkesini cignemez mi?  
+> => java gibi dillerden gelenler buna kotu bakiyor:
+>    Ancak C++ da sinifin interface ine sadece sinifin memberlari dahil degil
+>    global fonksiyonlarda sinifin interface inin bir parcasi
+>    
+
+> Dikkat friend lik ozelligini abuse etmemek lazim
+> class in private bolumu degistirildiginde, global friend funk. larda degistirilmeli
+ 
+  _ex_ 
+  ```cpp
+    class Myclass {
+    private:
+        void f1();
+    };
+
+    Myclass operator+(const Myclass&, const Myclass&);    // interface parcasi
+  ```
+> friend bildirimini, public veya private bolumde yapmanin bir farki yok
+
+> global bir fonksiyona frined lik verildiginde, bu fonksiyon ???
+
+> ADL devreye girer
+
+  _ex_ 
+  ```cpp
+      class Myclass{
+      public:
+          friend void foo();
+      private:
+      };
+
+      foo();          // error? 
+                      // Note: Modern C++ oncesi kural boyle degildi: cagirilabilirdi
+
+      Myclass::foo;   // error?
+
+
+      // ADL devreye girer
+      Myclass mx;
+      foo(mx);        // ADL sayesinde foo gorunur
+  ```
+
+  _ex_ 
+  ```cpp
+      namespace Nec{
+          class Myclass{
+          public:
+              friend void func();
+          private:
+          };
+
+          void foo(Myclass);
+      }
+
+
+      // foo da func da interface in bir parcasi
+
+      int main()
+      {
+          Nec::Myclass mx;
+          mx.func();
+          
+          foo(mx);    // ADL sayesinde foo bulunur
+      }
+  ```
+
+> sinifa friend lik verildiginde bu sinifin tanimi ???
+
+  _ex_ 
+  ```cpp
+  class Myclass { 
+  public:
+      friend void Necc::foo;    // ??
+
+      frined class Nec;   // Nec in butun ???
+  private:
+  }
+  ```
+
+---
+  _ex_ 
+  ```cpp
+    template<typenmae T>
+    class Myclass {
+    public
+        Myclass(T &x) {
+            cout << typeid(T).name();
+        }
+    };
+
+    Myclass x(ival);  // T = int
+
+    int a[10]{};
+    Myclass x(a);     //  T = int[10], no deduction guide
+
+    template<typenmae T>
+    Myclass(T) -> Myclass<T>;
+
+    int a[10]{};
+    Myclass x(a);     // syntax error, T = int*, array decay
+                      // deduction guide
+
+  ```
+---
+
+## friend and templates
+  - bir sinif sunlara friend lik verebilir:
+    * template function 
+    * template class 
+    *
+
+ 
+  _ex_ 
+  ```cpp
+      class Myclass {
+          template <typenmae T>
+          friend void func(T);
+
+          void foo();   // private
+      };
+
+      template<typenmae T>
+      void func(T)
+      {
+          Myclass x;
+
+          x.foo();    // ok, func is a friend of Myclass 
+      }
+
+      func(12);
+  ```
+ 
+  _ex_ 
+  ```cpp
+      class Myclass {
+          template <typename T>
+          friend class Nec;       // template class
+      };
+  ```
+ 
+  _ex_ 
+  ```cpp
+      class Myclass {
+          friend void foo(int);   // normal function 
+
+          void pfunc();
+      };
+
+      void foo(int)
+      {
+          Myclass<int> a1;
+          Myclass<double> a2;
+          Myclass<long> a3;
+
+          a1.func();  // ok
+          a2.func();  // ok
+          a3.func();  // ok
+      }
+  ```
+ 
+  _ex_ 
+  ```cpp
+      template<typenmae T>
+      class Myclass {
+          friend class Nec;   // Myclass in herhangi bir spec. private uyesine erisebilir
+
+          void pf();
+      };
+
+
+      class Nec {
+          void nf1(Myclass<int> x)
+          {
+              x.pf();
+          }
+
+          void nf1(Myclass<double> x)
+          {
+              x.pf();
+          }
+      }
+
+  ```
+ 
+  _ex_ 
+  ```cpp
+      template<typenmae T>
+      class Nec;
+
+      template<typenmae T>
+      class Myclass {
+          friend class Nec<T>;   // compiler needs to know that Nec is a template class
+                                 // a forward declaration is enough
+
+          void foo;
+      };
+
+
+      template<typenmae T>
+      class Nec{
+      public:
+          void f(Myclass<T> x)
+          {
+              x.foo();
+          }
+      };
+
+      int main()
+      {
+          Nec<int> nec;
+          Myclass<int> m;
+
+          nec.f(m);
+      }
+  ```
+incele
+
+# cpp kodlar.
+  _ex_ 
+  ```cpp
+  //gfunc işlevi A sınıfının tüm açılımlarının (specialization) private bölümüne erişebilir
+
+template <typename T>
+class A {
+	friend int gfunc();
+	void foo(); //private
+};
+
+
+int gfunc()
+{
+	A<int> ax;
+	A<double> bx;
+	A<char> cx;
+
+	ax.foo();
+	bx.foo();
+	cx.foo();
+}
+  ```
+ 
+  _ex_ 
+  ```cpp
+      template <class T>
+      void tfunc(T);
+      
+      template <typename T>
+      class A
+      {
+          friend void tfunc<T>(T);
+          void foo();
+      };
+      
+      template <typename T>
+      void tfunc(T)
+      {
+          A<T> x;
+          x.foo();    // A nin private bolumu
+      }
+      
+      
+      int main()
+      {
+          tfunc(10);
+          tfunc(2.4);
+      }
+  ```
+
+---
+  _ex_ 
+  ```cpp
+      // ogrenci sorusu
+      template <typename T>
+      class myclass
+      {
+          void func();
+
+          friend void foo(T);
+      }
+
+      void foo(int) 
+      {
+          myclass<int> x;
+          x.func();         // ok
+
+
+          myclass<double> x;
+          x.func();         // error 
+      }
+   ```
+
+   ```cpp
+      template <typename T>
+      class Myclass
+      {
+          void func();
+
+
+          frined class Nec<T>;  // requires forward declaration
+          
+          friend class Nec;     // does not require forward declaration ??
+
+          template <typename U>
+          friend class Nec<U>;  // en genel tanim
+
+      }
+   ```
+   
+ 
+  _ex_ 
+  ```cpp
+      ??
+
+      A nin butun spec.leri,  Nec in butun spec. private bolumune erisebilir
+  ```
+
+  _ex_ 
+  ```cpp
+
+template <typename T>
+class X;
+
+template <typename T>
+class A
+{
+    //friend class X<T>;      // 1
+    //friend class X<int>;    // 2
+private:
+    void foo();
+};
+
+
+
+template <typename T>
+class X {
+public:
+    void func()
+    {
+        A<double> ax;
+        
+        ax.foo();
+    }
+};
+
+
+int main()
+{
+    X<double> a;
+
+    a.func();   // requires 1, error in case of 2
+}
+  ```
+ 
+  _ex_ 
+  ```cpp
+template <class T>
+void tfunc(T);
+
+template <typename T>
+class A
+{
+    friend void tfunc<T>(T);
+    void foo();
+};
+
+template <typename T>
+void tfunc(T)
+{
+    A<T> x;
+    x.foo();
+}
+
+
+int main()
+{
+    tfunc(10);
+    tfunc(2.4);
+}
+  ```
+
+next class:
+  CRTP
+  Mixin classes
