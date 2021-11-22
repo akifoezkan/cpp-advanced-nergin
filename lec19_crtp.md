@@ -1,5 +1,5 @@
 # CRTP (Curiously Recurring Template Pattern)
-    - Yle bir kalitim yapacagiz ki ???
+  Oyle bir kalitim yapacagiz ki Base class in template parametresi Der class olacak
 
   _ex_:
   ```cpp
@@ -13,11 +13,11 @@
 
             static_cast<Derived&>(*this)  // ref to Der
 
-            // Taban sinif turemis sinifin fonksiyonu cagirir
+            // Taban sinif turemis sinifin fonksiyonu cagirabilir
             static_cast<Derived*>(this)->implementation();
 
-            // implementation dependent type oldugu icin derleyici bunun impl.
-            // direk aramayacak.
+            // ->implementation() dependent type oldugu icin derleyici 
+            // ilk fazda bu ismi aramayacak
         }
     };
 
@@ -30,8 +30,14 @@
 
     };
   ```
+
+Bu sayede 
+- Base class Derived in uye fonksiyonlarini cagirabilir
+
   _ex_:
   ```cpp
+    // Public kalitimda Derived in clint lari Base in interface fonksiyonlarini cagirabilir
+
     template<typename Derived>
     class Base {
     public:
@@ -39,9 +45,6 @@
         {
             // Taban sinif turemis sinifin fonksiyonu cagirir
             static_cast<Derived*>(this)->implementation();
-
-            // implementation dependent type oldugu icin derleyici bunun impl.
-            // direk aramayacak.
         }
     };
 
@@ -61,6 +64,12 @@
     }
   ```
 
+## CRTP: interface design
+
+Base in interface inde, Der in interface inde olan bir fonksiyon tanimlanmis olabilir.  
+  - Bu bir syntax error degildir
+  - Der'in interface fonksiyonu Base in interface fonksiyonunu shadow eder.
+
   _ex_:
   ```cpp
     template<typename Derived>
@@ -70,11 +79,9 @@
         {
             // Taban sinif turemis sinifin fonksiyonu cagirir
             static_cast<Derived*>(this)->implementation();
-
-            // implementation dependent type oldugu icin derleyici bunun impl.
-            // direk aramayacak.
         }
 
+        // Base::implementation, shadowed by Der::implementation
         void implementation()
         {
             std::cout << "Base::implementatioon\n";
@@ -83,12 +90,12 @@
 
     class Der : public Base<Der> {
     public:
+        // Der::implementation
         void implementation()
         {
             std::cout << "Der::implementation()\n";
         }
     };
-
 
     int main(){
         Der myder;
@@ -97,6 +104,8 @@
     }
   ```
 
+Public inheritance da Der, Base in interface ini kullanir
+
   _ex_:
   ```cpp
     template<typename Derived>
@@ -104,11 +113,7 @@
     public:
         void interface()
         {
-            // Taban sinif turemis sinifin fonksiyonu cagirir
             static_cast<Derived*>(this)->implementation();
-
-            // implementation dependent type oldugu icin derleyici bunun impl.
-            // direk aramayacak.
         }
 
         void implementation()
@@ -176,20 +181,26 @@
 
         myder.static_implementation();  // Der:static_implementation
         
-        // Ders:static_implementation tanimlanmasaydi Base::static_impl cagirilacakti
+        // Der:static_implementation tanimlanmasaydi, Base::static_impl cagirilirdi
     }
   ```
 
-> birden fazla sinif olsuturulurken ...
+> Common pitfall  
+> CRTP pattern: ```class Der : public Base<Der>```  
+> Hata: ```class Der : public Base<Der2>```  (Base in template parametresi Der degil)  
+> sonuc: (run-time a yonelik) beklenmeyen sonuclar olusur.  
+>
+> Bunu (undefined behaviouri) engellemek ve syntax error garantisi vermek icin soyle bir yapi kullanabiliriz:
   
-  _ex_:
   ```cpp
-    template<typenmae Derived>
+    template<typename Derived>
     class Base {
-    public:
     private:
         Base() {};
         friend Derived;
+
+        // Base class i sadece Derived class construct edebilir.
+        // Bu sayede Nec: public Base<Der>, syntax error verir
     };
 
     class Der : public Base<Der>{
@@ -199,24 +210,27 @@
 
     class Nec : public Base<Der>{
     public:
-      // ???
+      // Runtime a yonelik bir hata olusur
 
-      // iNec i Base in Der acilimindan olusturmaya calisiyor
+      // Nec in Base ini Der acilimindan olusturmaya calisiyor
     };
   ```
 
-> CRTP tek bir amacla kullanilmaz
->   - esas: taban sinifin turemis sinifi kullanarak, truemis sinifa bir takim islevler eklemesi
->     * boilerplate kod u azaltir
->     * diger faydalari
->   - runtime polymorphisme alternatic
+# CRTP kullanim amaclari
+CRTP farkli amaclar icin kullanilabilir:
+  - [esas amaci]: Taban sinifin turemis sinifi kullanarak, truemis sinifa bir takim islevler eklemesi
+     * boilerplate kod u azaltir
+     * ...
+  - runtime polymorphisme (static) alternative olusturur  
 
-## object counting
-  - static counter that increases with copy ctor and ...
+Ornek olarak asagidaki seneryolar incelenecek:
 
-  > Herhangi bir sinifa object counter temasini eklemek icin her defasinda ayni kodu tekrar tekrar yazmamiz gerekecek. Bunun yerine CRTP kullanilabilir
+## 1. Object counting
+> CRTP ile boiler kod yazimi azaltilabilir  
 
-  _ex_:
+  Normalde asagidaki bir kodun object counting ozelligini isteyen butun class lar icin yazilmasi gerekir:  
+  - static counter that increases with copy ctor and decrements with dtor
+
   ```cpp
       template<typename T>
       class Counter {
@@ -238,7 +252,7 @@
              --ms_count_alive;
           }
 
-          // Der siniflar icin interface
+          // Der siniflari icin interface
 
           static std::size_t how_many_created() { return ms_count_created; }
           
@@ -249,26 +263,27 @@
           static std::size_t ms_count_created;
           static std::size_t ms_count_alive;
 
-
-          // her farkli T icin ayri bir ms_count* olusturulacak
+          // Reminder: her farkli T turu icin ayri bir ms_count* olusturulacak
       };
 
-      template typenmae T<
+      template<typename T>
       std::size_t Counter<T>::ms_count_alive{};
 
-      template typenmae T<
+      template<typename T>
       std::size_t Counter<T>::ms_count_created{};
 
 
       // private inheritance to hide the interface of Counter
+      // Dolayisiyla Base sinifin public interface i Der in public interface ine eklenmez
       class Neco : Counter<Neco> {
-          // interface
+          // interface ...
 
-          // Private inheritance da
-          // Base sinifin public interface i Der in public interface ine gelmez
+          // using ile istenilen fonksiyonlari Der in interface ine ekleriz
           using Counter<Neco>::how_many_created;
-          
           using Counter<Neco>::how_many_alive;
+
+          // CRTP sayesinde kod tekrarini azalttik.
+          // Object Counting islevini Neco'ya ekledi
       }
 
 
@@ -279,16 +294,14 @@
               Neco n4, n5, n6;
           }
 
-          // using olmasaydi asagidaki statement lar error du
           Neco::how_many_created();
           Neco::how_many_alive();
-
-
-          // CRTP sayesinde kod tekrarindan kurtulduk
       }
   ```
 
-## CRTP kullanma amaci: (mixing) Turemis siniflara belirli bir ozellik kazandirmak
+## 2. (Mixin-Class) Turemis siniflara belirli bir ozellik kazandirmak
+  - Base sinif interface i belirleyecek
+  - Derived sinif interfacein implementation inini belirleyecek
 
   _ex_:
   ```cpp
@@ -297,9 +310,8 @@
       public:
           void write(const char *p) const
           {
-              static_cast<const Der*>(this)->write_impl(str);   // calls Ders'write impl
+              static_cast<const Der*>(this)->write_impl(str);   // calls Der's write impl
           }
-
       };
 
 
@@ -313,7 +325,8 @@
           }
 
           friend class Writer<FileWriter>;
-              // Neden boyle bir kalip kullandik: write_impl i global interface de istemiyoruz
+              // Neden friend?: 
+              // private inheritence, write_impl private (global interface de istemiyoruz)
 
       private:
           void write_impl(const char* str) const
@@ -346,7 +359,6 @@
   _ex_:
   ```cpp
       // CRTP ile equality compare ozelligini Der siniflarina kazandiralim
-
       template<typename Der>
       struct Equality {
           const Der& derived() const
@@ -355,13 +367,10 @@
           }
       };
 
-
-      // Der in operator< fonksiyonu oldugunu varsayiyoruz
-
       template<typename Der>
       bool operator==(const Equality<Der>& left, const Equality<Der>& right)
       {
-
+          // Der in operator< fonksiyonu oldugunu varsayiyoruz
           return !(left.derived() < right.derived()) && !((right.derived() < left.derived));
       }
 
@@ -411,11 +420,6 @@
       }
   ```
 
-> blog, foonathan
-> -> cpp con algorithms talk u da guzel
-> Jonathan Boccara
-> https://www.jonathanmueller.dev, daha agir kutuphane gelistirmek uzerine cok iyi
-
   _ex_:
   ```cpp
       template<typename Der>
@@ -446,20 +450,14 @@
               return !(left.derived < right.derived());
           }
 
-          friend bool operator>(const Comparison<Der>& left, const Comparison<Der>& right)
+          friend bool operator<=(const Comparison<Der>& left, const Comparison<Der>& right)
           {
               return !(right.derived() < left.derived());
           }
       };
-
-
-      // ???? fix the following
-
-
-      // Der in operator< fonksiyonu oldugunu varsayiyoruz
-
-
-      class Nec : public Comparison<Nec> {
+            
+    
+    class Nec : public Comparison<Nec> {
       public:
           Nec(int val = 0) : m_val{val} {}
 
@@ -496,6 +494,8 @@
           Person p1{"Kadir"}, pw{"Akif"};
           std::cout << "p1 == p2" << (p1 == p2) << "\n";
           std::cout << "p1 != p2" << (p1 != p2) << "\n";
+
+          ...
       }
   ```
 
@@ -536,17 +536,17 @@
       }
   ```
 
-## CRTP ile Base in interface ini ???
+## 3) CRTP ile interface in bir kismini Base e tasimak
   _ex_:
   ```cpp
-      template<typenmae Der>
+      template<typename Der>
       class Container {
       public:
           decltype(auto) front()
           {
               return *derived().begin();
 
-              // Note that decltype(auto) to return a reference
+              // decltype(auto) since we want to return a reference (when the expresion is L-val)
           }
 
           decltype(auto) back()
@@ -565,30 +565,30 @@
           }
 
       private:
+          // Const overloading
           Der& derived() { return static_cast<Der&>(*this); }
-          
           const Der& derived() const { return static_cast<Der&>(*this); }
       };
-
 
       template<typename T>
       class Darray : public Container<Darray<T>> {
       public:
-          // note that Darray class is also a template function
+          // note that Darray is also a template class
 
           Darray(std::size_t n) : m_size{n}, m_uptr {std::make_unique<T[]>(n)} {}
 
-          T* begin() { m_uptr. get() };
+          T* begin() { return m_uptr.get(); };
               // T* begin() & {} -> sadece sol taraf degeri nesneleri icin cagirilmasi icin
 
-          const T* begin() { m_uptr. get() };
+          const T* begin() { return m_uptr. get(); };
 
-          const T* end() { m_uptr.get() + m_size; };
+          const T* end() { return m_uptr.get() + m_size; };
               
       private:
           std::size_t m_size;
           std::unique_ptr<T[]> m_uptr;
       };
+
 
       int main()
       {
@@ -602,22 +602,23 @@
       }
   ```
 
-## polymorphic chain 
+## 4) polymorphic chain 
 
-  _ex_:
+Function chaining ozelligini kullanan bir ornek yazalim:
+
   ```cpp
       class Printer {
       public:
           Printer(std::ostream& os) : m_os{os};
 
-          template<typenmae T>
+          template<typename T>
           Printer& print(cons T& tval)
           {
               m_os << tval;
               return *this;
           }
 
-          template<typenmae T>
+          template<typename T>
           Printer& print_line(cons T& tval)
           {
               m_os << tval << "\n";
@@ -632,25 +633,24 @@
       {
           Printer(std::cout).print("Kaveh Nematipour").print_line(6712.98);
       }
-
-
-      // Kalitim olmasi durumunda bu chaining calismayacak
   ```
 
-  _ex_:
+Kalitim olmasi durumunda yukaridaki chaining calismayabilir.  
+Asagidaki kod bu durumu gosterir:
+
   ```cpp
       class Printer {
       public:
           Printer(std::ostream& os) : m_os{os};
 
-          template<typenmae T>
+          template<typename T>
           Printer& print(cons T& tval)
           {
               m_os << tval;
               return *this;
           }
 
-          template<typenmae T>
+          template<typename T>
           Printer& print_line(cons T& tval)
           {
               m_os << tval << "\n";
@@ -677,17 +677,18 @@
       int main()
       {
           ConsolePrinter().print("Kaveh").print_line(67123.12); //ok
+                        // ConsolePrinter().print("Kaveh") returns Printer type            
           
           ConsolePrinter().print("Kaveh").set_color(661).print_line(823.48324); //error
+                        // ConsolePrinter().print("Kaveh") returns Printer type
+                        // Printer does not have a .set_color(661) member function
 
-
-          // error: set_color is not a member of ConsolePointer
+          // error: set_color is not a member of Printer
       }
   ```
 
   > yukaridaki problemi CRTP ile cozelim
 
-  _ex_:
   ```cpp
       template<typename ConcretePrinter>
       class Printer {
@@ -701,7 +702,7 @@
               return static_cast<ConcretePrinter&>(*this);
           }
 
-          template<typenmae T>
+          template<typename T>
           ConcretePrinter& print_line(cons T& tval)
           {
               m_os << tval << "\n";
@@ -717,7 +718,7 @@
       class ConsolePrinter : public Printer<ConsolePrinter> {
       public:
           ConsolePrinter() : Printer{std:cout} {}
-            // Note that I don't have to write Printer<ConsolePrinter>
+            // Note: I don't have to write Printer<ConsolePrinter>
 
           ConsolePrinter& set_color()
           {
@@ -730,26 +731,27 @@
       {
           ConsolePrinter().print("Kaveh").print_line(67123.12); //ok
           
-          ConsolePrinter().print("Kaveh").set_color(661).print_line(823.48324); //error
-
-
-          // error: set_color is not a member of ConsolePointer
+          ConsolePrinter().print("Kaveh").set_color(661).print_line(823.48324); //ok
       }
   ```
 
-# reminder: covariant (polymorphic classes)
+> Yukaridaki problemi covaiant type kullanarak cozemeyiz
 
-  _ex_:
+---
+## reminder: covariant return type (polymorphic classes)
+Asagidaki gibi pointer veya referans donduren herhangi bir virtual function icin tanimlanan override function interface return type in bir child turunu dondurebilir.  
+Bu durumda child type parent type in covariant i olur.
+
   ```cpp
       class A{};
       class B{};
       
-      class C{} : public A{};
+      class C{} : public A{}; // C is child of A
 
       class Base{
       public:
           virtual A func();
-          
+
           virtual *A foo();   // pointer or reference semantic
       }
 
@@ -760,16 +762,16 @@
           B func();  // redeclaration, signature is the same with
                      // error message: .... is not covariant from Base::func
 
-          // C is a (co)variant type of A, and interface is a pointer or ref
-
+          // C is a (co)variant type of A and interface is a pointer or ref
           C& func() ;  // ok
           C& func() override;  // ok
 
       };
   ```
+---
 
-# static polymorphism
-# -> virtual dispatch olmadan virtual dispatch 
+# 5) static polymorphism
+  Virtual dispatch benzeri bir yapiyi compile time da elde etmek
 
   _ex_:
   ```cpp
@@ -783,189 +785,4 @@
       public:
           void cry() override;
       };
-
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
-  ```
-
-  _ex_:
-  ```cpp
   ```
