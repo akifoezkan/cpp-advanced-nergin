@@ -158,7 +158,7 @@ _ex:_
             return *this;
         }
 
-        Myclass& foo(double)
+        Myclass& func(double)
         {
             return *this;
         }

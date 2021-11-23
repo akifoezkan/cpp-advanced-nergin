@@ -1,0 +1,1206 @@
+ilk 5 dk yi kacirdim:
+
+
+  _ex_
+  ```cpp
+  ```
+---
+# question about inheritance, also os asked in interviews
+    - snal fonksiyon private olabilir mi?
+    tabi ki olur, hatta tercih edilen bir metod (template method)
+    non-virtual interface
+
+    NVI idiom
+
+  _ex_
+  ```cpp
+    class Base {
+    public:
+        void foo()
+        {
+            // kodlar
+            func();
+
+            // kodlar
+        }
+    private:
+        virtual void func()
+        {
+            std::cout << "Bse::func()\n";
+        }
+    };
+
+    class Der: public Base {
+    public:
+        void func() override
+        {
+            std::cout << "Der::func()\n";
+        }
+    };
+
+    void f(Base& base)
+    {
+        base.foo();
+    }
+
+    ...??
+  ```
+
+## sinifin bir sanal fonks  
+  ```cpp
+    class Base {
+    public:
+        virtual void func()
+        {
+            std::cout << "Bse::func()\n";
+        }
+    };
+
+    class Der: public Base {
+    private:
+        // this is ok
+        void func() override
+        {
+            std::cout << "Der::func()\n";
+        }
+    };
+
+    void f(Base& r)
+    {
+        r.func();
+    }
+
+    int main()
+    {
+        Der myder;
+
+        f(myder);   // ok, Der::func
+                    // access control compile time da static ture gore yapilir
+
+
+        myder.func();   // error, der.func() is private
+    }
+  ```
+
+## sinifin bir sanal fonks  
+  ```cpp
+    class Base {
+    public:
+        virtual void func(int x = 10)
+        {
+            std::cout << "Bse::func(int) x = " << x << "\n";
+        }
+    };
+
+    class Der: public Base {
+    public:
+        void func(int x = 50) override
+        {
+            std::cout << "Der::func()\n";
+        }
+    };
+
+    void f(Base& r)
+    {
+        r.func();
+    }
+
+    int main()
+    {
+        Der myder;
+
+        f(myder);   // ok, calls Der::func, with int x=10
+                    // default argument is a compile-time property 
+
+
+        myder.func();   // error, der.func() is private
+    }
+  ```
+---
+
+# CRTP, static polymorphism, virtual dispatch e bir alternatif olusturur
+
+> Inheritance cok guclu bir bagimlilik olusturur, bu yuzden cok iyi dusunmek lazim  
+> Duruma gore inheritance in alternatifleri de var
+> 1. CRTP: static polymorphism
+> 2. std::variant kullanmak (olusturulacak sinif sayisi belli ise)  
+>    variant daki alternatif turler kalitimda kullanilacak turler olsun
+>    ex: A, B, C bir taban siniftan olusacak ve kapali bir hiyerarsi (ileride bir D sinifi eklenmeyecek)
+>    bu durumda variant in A,B,C yapisi olusturulabilir
+> 3. type erasure idiom: 
+>    en kuvvetli alternatif, inheritance a alternatif olusturur ve bagimliligi azaltir
+>    dezavantaj: anlasilmasi ve yazilmasi biraz zor
+
+  _ex_
+  ```cpp
+    class Pet {
+    public:
+        void make sound()
+        {
+            std::cout << get_sound() << "\n";
+        }
+
+    private:
+        virtual std::string get_sound() const = 0;  // pure virtual
+    };
+
+    class Cat : public Pet {
+    public:
+        virtual std::string get_sound() const override 
+        {
+            return "miyav miyav";
+        }
+    };
+
+    class Dog : public Pet {
+    public:
+        virtual std::string get_sound() const override 
+        {
+            return "hav hav hav";
+        }
+    };
+
+    class Bird : public Pet {
+    public:
+        virtual std::string get_sound() const override 
+        {
+            return "cik cik cik";
+        }
+    };
+
+    void pet_game(Pet& pet)
+    {
+        pet.make_sound();
+    }
+
+    int main()
+    {
+        Cat mycat;
+        Dog mydog;
+        Bird Mybird;
+
+        pet_game(mycat);
+        pet_game(mydog);
+        pet_game(mybird);
+    }
+  ```
+
+  ---
+    override: Modern C++ (contextual category)  
+     => taban sinifta derleyici override edilecek bir interface var mi diye bakar yoksa compiler error verir.
+  ---
+
+  _ex_
+  ```cpp
+    template<typename Der>
+    class Pet {
+    public:
+        void make sound()
+        {
+            std::cout << static_cast<const Der*>(this)->get_sound(); 
+        }
+
+    private:
+        const Der& derObject()
+        {
+            static_cast<const Der&>(*this);
+        }
+    };
+
+    class Dog : public Pet<Dog> {
+    public:
+        std::string get_sound() const
+        {
+            return "hav hav hav";
+        }
+    }
+
+    class Dog : public Pet<Cat> {
+    public:
+        std::string get_sound() const
+        {
+            return "miyav miyav miyav";
+        }
+    }
+
+
+    class Dog : public Pet<Bird> {
+    public:
+        std::string get_sound() const
+        {
+            return "cik cik cik";
+        }
+    }
+
+    template<typenmae T>
+    void pet_game(Pet<T>& pet)
+    {
+        pet.make_sound();
+    }
+
+    int main()
+    {
+        Cat mycat;
+        Dog mydog;
+        Bird Mybird;
+
+        pet_game(mycat);
+        pet_game(mydog);
+        pet_game(mybird);
+
+        // tabi ki ben bu nesneleri Base Type bir container da tutamam
+        // cunku bunlar afarkli turler, ayni ture dayanan nesneler degil.
+
+        // sunda da bir problem yok
+        Cat mycat;
+        mycat.make_sound();
+    }
+  ```
+  Avantajar:
+  - sanal fonksiyon maliyeti yok
+  - nesneler dinamik omulu olmak zorunda degil
+
+# examples:
+
+## singleton
+
+  _ex_
+  ```cpp
+    template<typename Derived> 
+
+    // thread safe Singleton
+    class Singleton {
+        static std::unique_ptr<Derived> m_instance; 
+        static std::once_flag           m_once;     // once_flag: ??
+
+    protected:
+        Singleton() {}
+
+    public:
+        Singleton(const Singleton&) = delete;
+        Singleton& operator=(const Singleton&) = delete;
+
+        static Derived& get_instance()
+        {
+            std::call_once(Singleton::m_once,
+                [](){ Singleton::m_instance.reset(new Derived()); });
+
+            return *m_instance;
+        }
+    };
+
+    template<typename Derived>
+    std::unique_ptr<Derived> Singleton<Derived>::m_instance;
+
+    template<typename Derived>
+    std::once_flag<Derived> Singleton<Derived>::m_once;
+
+    class Nec : public Singleton<Nec> {
+    public:
+        Nec() {
+            std::cout << "Nec ctor\n";
+        };
+
+        ~Nec() {
+            std::cout << "Nec dtor\n";
+        };
+
+        void foo()
+        {
+            std::cout < "Nec::foo()\n";
+        }
+
+        void bar()
+        {
+            std::cout < "Nec::bar()\n";
+        }
+
+        int main()
+        {
+            Nec::get_instance().foo();
+            Nec::get_instance().bar();
+
+            auto& snec = Nec::get_instance();
+
+            snec.bar();
+
+            auto mynec = snec;  // Error, copy ctor is deleted
+        }
+    }
+  ```
+Break: missed a few minutes
+# Mixin?
+    - var olan sinifi taban sinif olarak kullanmak
+  _ex_
+  ```cpp
+    template<typename Base>
+    class SkillA : public Base {
+    public:
+        void afunc()
+        {
+            std::cout << "SkillA is running\n";
+            Base::foo();
+            Base::bar();
+            std::cout << "-----------------\n";
+        }
+    };
+
+    template<typename Base>
+    class SkillB : public Base {
+    public:
+        void bfunc()
+        {
+            std::cout << "SkillB is running\n";
+            Base::baz();
+            Base::foo();
+            std::cout << "-----------------\n";
+        }
+    };
+
+    template<typename Base>
+    class SkillC : public Base {
+    public:
+        void cfunc()
+        {
+            std::cout << "SkillB is running\n";
+            Base::foo();
+            Base::foo();
+            Base::foo();
+            std::cout << "-----------------\n";
+        }
+    };
+
+    // Myclass CRTP deki kalitimla elde edilmiyor
+    // Myclass taban sinif olarak kullanilacak
+
+    class Myclass {
+    public:
+        void foo()
+        {
+            std::cout << "Myclass::foo()\n";
+        }
+
+        void bar()
+        {
+            std::cout << "Myclass::bar()\n";
+        }
+
+        void baz()
+        {
+            std::cout << "Myclass::baz()\n";
+        }
+    };
+
+    using Neco = SkillA<Myclass>;
+
+    int main()
+    {
+        SkillA<Myclass>{}.afunc();
+        SkillB<Myclass>{}.bfunc();
+
+        SkillA<SkillB<SkillC<Myclass>>> x;  // x has all the skills: afunc, bfunc, cfunc
+    }
+  ```
+
+  _ex_
+  ```cpp
+    template<typename Printable>
+    struct RepeatPrint {
+        void repeat(unsigned n)
+        {
+            while(n--)
+                static_cast<const Printable&>(*this).print();
+        }
+    };
+
+    class Name : public RepeatPrint<Name>
+    {
+    public:
+        Name(std::string name, std::string surname) : m_name{std::move(name)},
+            m_surname{std::move(surname)}{}
+
+        void print() const
+        {
+            std::cout << m_name << " " << m_surname << '\n';
+        }
+    
+    private:
+        std::string m_name;
+        std::string m_surname;
+    };
+
+    int main()
+    {
+        Name myname{"Necati", "ergin"};
+        myname.repeat(10);
+    }
+
+  ```
+
+  ayni ornegi CRTP ile olusturualim
+
+  _ex_
+  ```cpp
+        // change below????
+    class Name
+    {
+    public:
+        Name(std::string name, std::string surname) : m_name{std::move(name)},
+            m_surname{std::move(surname)}{}
+
+        void print() const
+        {
+            std::cout << m_name << " " << m_surname << '\n';
+        }
+    
+    private:
+        std::string m_name;
+        std::string m_surname;
+    };
+
+
+    template<typename Printable>
+    struct RepeatPrint : Printable {
+        explicit RepeatPrint(const Printable& printable) : Printable(printable) {}
+
+        using Printable::Printable;     // inherited ctor
+
+        void repeat(unsigned n) const
+        {
+            while(n--)
+            {
+                this->print();  // call for Printable::print
+            }
+        }
+    };
+
+    using RepeatPrintableName = RepeatPrint<Name>;
+
+
+    template<typenmae Printable>
+    RepeatPrint<Printable> repeat_print(const Printable& pr)
+    {
+        return RepeatPPrint<Printable>(pr);
+    }
+
+    int main()
+    {
+        RepeatPrint<Name> myname{ Name{"Necati", "Ergin"}};
+
+        RepeatPrint<Name> {"ali", "erkoc"}.repeat(5);
+
+        RepeatPrintableName x{"Umut", "Ktan.."};
+        x.repeat(10);
+
+        Name myname{"necati", "ergin"};
+        repeat_print(myname).repeat(10);
+    }
+  ```
+  ========================= type erasure idiomu ========================
+  # Type erosure idiom
+  -> farki turler var. Bu turlerin ortak ozelligine dayanarak ayni tur gibi kullanmak.
+
+    Kalitimda bu isi yapar, ancak
+    1. taban sinifi olustur
+    2. turemis sinifi taban siniftan olustur, taban sinifin virtual func. override etmek
+
+
+    type erasure idiom, birbirinden farkli turleri, kalitimin olusturudugu bagimliligi olusturmadan ortak ozelliklerini kullanarak ??? ayni tur gibi kullanmak
+
+    > type erasure idiom ile type erasure kavramini birbirine karistirmayalim
+
+## type erasure in C
+    - uses void*
+    - this is not the same with type erasure idiom in C++
+
+  _ex_: qsort: bir diziyi turden bagimsiz olarak siralar
+  ```c
+    void qsort(void* vpa, size_t size, size_t sz, int (*f)(const void*, const void*));
+        // parameters: dizi, size, ???..
+
+    int mycmp(const void* vp1, const void* vp2)
+    {
+        // Biz sunu biliyoruz: vp1 int* elemanlardan olusacak
+
+        // return *(const int*)vp1 - *(const void*)vp2;   // tasma hatasi olabilir
+        
+        if(*(const int*)vp1 > *(const void*)vp2)
+        {
+            return 1
+        }
+        if(*(const int*)vp1 < *(const void*)vp2)
+            return -1;
+
+        return 0;
+    }
+
+    int main()
+    {
+        constexpr int size = 10'000;
+        int a[size];
+
+        generate_n(std::begin(a), size, Irand{0, 100000});
+        print(begin(a), end(a));
+
+        qsort(a, size, sizeof(*a), )
+        // tehlike: herhangi bir dizinin adresini gonderebiliriz. 
+        // yanlis bir dizi bile olsa compile time error almayacagiz
+    }
+  ```
+
+## inheritance is also a type erasure
+    ??
+
+  _ex_
+  ```cpp
+  ```
+
+## Type Erasure idiom in C++
+  - bagimsiz siniflar
+    * sinif sablonalari degil
+  - ama ayni turdenmis gibi turlerini dikkate almadan ??? 
+    * bir containerda tutmak istiyorum
+    * ??
+
+  _ex_
+  ```cpp
+    class A{};
+    class B{};
+    class C{};
+
+    class Nec; 
+  ```
+
+  kullanilan terimler: Concept, Model
+  -> C++20 Concept degil
+
+> concept sinif model sinifa bir interface saglar
+> virtual fonksiyon, interfacede degil, tamamen implementation da kalacak  
+>   ->
+
+  _ex_
+  ```cpp
+    // Once bir concept sinif yazalim, sanal interface sunsun
+
+    class AnimalConcept {
+    public:
+        virtual ~AnimalConcept = default;
+        virtual void cry() = 0;
+    };
+
+
+    // Model sinif, kalitim yoluyla
+
+    template <typename ErasedType>
+    class AnimalModel : public AnimalConcept {
+    public:
+        AnimalModel(const ErasedType& object) : object_(object){}
+
+        void cry() override
+        {
+            object_.cry();  // Turemis sinif override ederken, tuttugu veri elemaninin fonksiyonunu cagirdi
+        }
+
+    private:
+        ErasedType object_;
+    };
+  ```
+
+Step-2
+  _ex_
+  ```cpp
+    class Animal {
+    public:
+        // Oyle bir ctor yazalim ki herhangi bir nesneyi kabul etsin
+        template<typename ErasedType>
+        Animal(ErasedType&& x) : uptr(std::make_unique<AnimalModel>>(<std::forward<ErasedType>>(x))) {}
+
+        void cry()
+        {
+            // non-virtual interface function
+            uptr->cry();
+                // ????
+        }
+    
+    private:
+        // kullanicilarin bu kisimdan haberi yok
+        class AnimalConcept {
+        public:
+            virtual ~AnimalConcept = default;
+            virtual void cry() = 0;
+        };
+
+
+        // Model sinif, kalitim yoluyla
+
+        template <typename ErasedType>
+        class AnimalModel : public AnimalConcept {
+        public:
+            AnimalModel(const ErasedType& object) : object_(object){}
+
+            void cry() override
+            {
+                object_.cry();  // Turemis sinif override ederken, tuttugu veri elemaninin fonksiyonunu cagirdi
+            }
+
+        private:
+            ErasedType object_;
+        };
+
+
+        std::unique_ptr<AnimalConcept> uptr;
+            // private veri elemani
+            // Taban sinif pointer turemis sinifi gosterebilir
+            // Dolayisiyla: uptr AnimalModel turunden bir nesneyi de gosterebilir
+    }
+
+    class Cat {
+    public:
+        void cry()
+        {
+            std::cout << "miyav\n";
+        }
+    };
+
+    class Dog {
+    public:
+        void cry()
+        {
+            std::cout << "hav\n";
+        }
+    };
+
+    class Bird {
+    public:
+        void cry()
+        {
+            std::cout << "cik cik\n";
+        }
+    };
+
+    int main()
+    {
+        Animal a{ Bird{} };
+        Animal b{ Dog{} };
+        Animal c{ Cat{} };
+
+        a.cry();
+        b.cry();
+        c.cry();
+
+        vector<Animal> vec;
+
+        vec.emplace_back(Cat{})
+    }
+
+    // kalitim disinda daha saglikli bir ??? elde etmek
+    // yeterki cry fonksiyonu olsun, ortak turde kullanabiliyoruz
+  ```
+
+> su anda copy ctor deleted edilmis durumda bunu duzeltelim
+
+Ortak bir pointer tur oluşturmak istiyoruz (void yerine). Bunun icin ayni interface e sahip ortak bir type olustururyoruz. Bir template class ile ortak type interfaceini implement eden bir type olusturyoruz.
+
+  _ex_
+
+  // unique ptr kullandigimiz icin AnimalConcet nesneleri birbrine kopyalanabilir degil.
+  // AnimalConcept bir abstract class
+  // Bu yuzden bir clone interface yazabiliriz
+
+  ```cpp
+    class Animal {
+    public:
+        template<typename ErasedType>
+        Animal(ErasedType&& x) : uptr(std::make_unique<AnimalModel>>(<std::forward<ErasedType>>(x))) {}
+                // Herhangi bir nesneyi kabul etsin
+
+        Animal(const Animal &other) : uptr(other.uptr->copy()) {}
+
+        void cry()
+        {
+            // non-virtual interface function
+            uptr->cry();
+                // ????
+        }
+    
+    private:
+        // kullanicilarin bu kisimdan haberi yok
+        class AnimalConcept {
+        public:
+            virtual ~AnimalConcept = default;
+            
+            virtual std::unique_ptr<AnimalConcept> copy() const = 0;
+            
+            virtual void cry() = 0;
+        };
+
+
+        // Model sinif, kalitim yoluyla
+
+        template <typename ErasedType>
+        class AnimalModel : public AnimalConcept {
+        public:
+            AnimalModel(const ErasedType& object) : object_(object){}
+
+            std::unique_tr<AnimalConcept> copy() const override
+            {
+                return std::make_unique<AnimalModel>(*this);
+            }
+
+            void cry() override
+            {
+                object_.cry();  // Turemis sinif override ederken, tuttugu veri elemaninin fonksiyonunu cagirdi
+            }
+
+        private:
+            ErasedType object_;
+        };
+
+
+        std::unique_ptr<AnimalConcept> uptr;
+            // private veri elemani
+            // Taban sinif pointer turemis sinifi gosterebilir
+            // Dolayisiyla: uptr AnimalModel turunden bir nesneyi de gosterebilir
+    }
+
+    class Cat {
+    public:
+        void cry()
+        {
+            std::cout << "miyav\n";
+        }
+    };
+
+    class Dog {
+    public:
+        void cry()
+        {
+            std::cout << "hav\n";
+        }
+    };
+
+    class Bird {
+    public:
+        void cry()
+        {
+            std::cout << "cik cik\n";
+        }
+    };
+
+    int main()
+    {
+        vector<Animal> avec;
+        
+        avec.emplace_back(Dog())
+        avec.emplace_back(Cat())
+        avec.emplace_back(Bird())
+
+        for(auto&a : vec) {
+            a.cry();
+        }
+    }
+  ```
+
+Soru: boyle siniflar olacak fakat bu siniflari ayni turdenmis gibi bir container da tutabileceksiniz:
+    -> bizim klasik cevap
+    bu durumda Animal class olustur, buna interface yazariz, sanal fonksiyonlar
+    -> kedi kopek giibi siniflari inheritance ile elde ederim
+    -> virtual dispatch kullanirim
+
+Animaldan kaliti ???? 
+
+Bastan beri type erasure in kalitim yerine jullanilmasi dusunulmus
+tek sorun: implementatasyonu karisik
+-> bir suru type erasure kutuphanesi var
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
