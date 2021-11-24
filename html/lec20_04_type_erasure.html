@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>lec20_04_type_erasure.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<p>========================= type erasure idiomu ========================</p>
+<h1 id="type-erasure-idiom">Type Erasure Idiom</h1>
+<p>Type erasure idiom su ise yarar:<br>
+Farki turler var. Bu turlerin ortak ozelligine dayanarak ayni tur gibi kullanmaya imkan tanir.</p>
+<blockquote>
+<p>Inheritance da ayni isi yapar, ancak</p>
+<ol>
+<li>taban sinifi olustur</li>
+<li>turemis sinifi taban siniftan olustur (taban sinifin virtual func. override etmek)</li>
+</ol>
+<p>=&gt; type erasure idiom, <strong>kalitimin olusturudugu bagimliligi olusturmadan</strong>, birbirinden farkli turleri (bu turlerin ortak ozelliklerini kullanarak) ayni tur gibi kullanmaya olanak saglar.</p>
+</blockquote>
+<blockquote>
+<p>C++ type erasure idiomu ile bircok dilde bulunan type erasure kavramini birbirine karistirmayalim.</p>
+</blockquote>
+<h2 id="type-erasure-in-c-do-not-mix-with-type-erasure-idiom-in-c">Type Erasure in C (Do not mix with type erasure idiom in C++)</h2>
+<ul>
+<li>uses void*</li>
+<li>this is not the same with type erasure idiom in C++</li>
+</ul>
+<p><em>ex</em>: qsort: bir diziyi turden bagimsiz olarak siralar</p>
+<pre class="hljs"><code><div>  <span class="hljs-comment">// function declaration</span>
+  <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">qsort</span><span class="hljs-params">(<span class="hljs-keyword">void</span>* vpa, <span class="hljs-keyword">size_t</span> <span class="hljs-built_in">size</span>, <span class="hljs-keyword">size_t</span> sz, <span class="hljs-keyword">int</span> (*f)(<span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span>*, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span>*))</span></span>;
+      <span class="hljs-comment">// vpa: siralanacak dizinin adresi</span>
+      <span class="hljs-comment">// size: siralanacek dizinin boyutu</span>
+      <span class="hljs-comment">// sz: siralanacak dizinin bir ogesinin sizeof'u</span>
+      <span class="hljs-comment">// iki elemani karsilastiracak function pointer</span>
+
+  <span class="hljs-comment">// usage</span>
+  <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mycmp</span><span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span>* vp1, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span>* vp2)</span>
+  </span>{
+      <span class="hljs-comment">// Biz sunu biliyoruz:</span>
+      <span class="hljs-comment">//  vp1 int* elemanlardan olusacak</span>
+
+      <span class="hljs-comment">// way1: tasma hatasi olabilir</span>
+      <span class="hljs-comment">// return *(const int*)vp1 - *(const void*)vp2;</span>
+      
+      <span class="hljs-comment">// way2: preferred</span>
+      <span class="hljs-keyword">if</span>(*(<span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span>*)vp1 &gt; *(<span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span>*)vp2)
+      {
+          <span class="hljs-keyword">return</span> <span class="hljs-number">1</span>
+      }
+      <span class="hljs-keyword">if</span>(*(<span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span>*)vp1 &lt; *(<span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span>*)vp2)
+          <span class="hljs-keyword">return</span> <span class="hljs-number">-1</span>;
+
+      <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+  }
+
+  <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span>
+  </span>{
+      <span class="hljs-keyword">constexpr</span> <span class="hljs-keyword">int</span> <span class="hljs-built_in">size</span> = <span class="hljs-number">10'000</span>;
+      <span class="hljs-keyword">int</span> a[<span class="hljs-built_in">size</span>];
+
+      generate_n(<span class="hljs-built_in">std</span>::<span class="hljs-built_in">begin</span>(a), <span class="hljs-built_in">size</span>, Irand{<span class="hljs-number">0</span>, <span class="hljs-number">100000</span>});
+      <span class="hljs-built_in">print</span>(<span class="hljs-built_in">begin</span>(a), <span class="hljs-built_in">end</span>(a));
+
+      qsort(a, <span class="hljs-built_in">size</span>, <span class="hljs-keyword">sizeof</span>(*a), )
+      <span class="hljs-comment">// tehlike: herhangi bir dizinin adresini gonderebiliriz. </span>
+      <span class="hljs-comment">//          yanlis bir dizi bile olsa compile time error gormeyiz</span>
+  }
+</div></code></pre>
+<h2 id="inheritance-is-also-a-type-erasure">Inheritance is also a Type Erasure</h2>
+<p><em>ex</em></p>
+<pre class="hljs"><code><div>  <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Base</span>{</span>};
+
+  <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">func</span><span class="hljs-params">(Base&amp;)</span>
+  </span>{
+      <span class="hljs-comment">// gercek tur run-time da belli olur</span>
+      <span class="hljs-comment">// we get a specific implementation via virtual dispatch</span>
+  }
+</div></code></pre>
+<h2 id="type-erasure-idiom-in-c">Type Erasure idiom in C++</h2>
+<p>Birbirinden bagimsiz siniflari kalitim kullanmadan, destekleri interface e guvenerek ayni turdenmis gibi turlerini dikkate almadan sunlari yapmak istiyorum:</p>
+<ul>
+<li>bir containerda tutmak</li>
+<li>herhangi bir fonksiyona arguman olarak gecebilmek</li>
+</ul>
+<blockquote>
+<p>run-time polymorphismi icin kalitim'a gore daha saglikli bir alternatif yaratir.</p>
+</blockquote>
+<p><em>ex</em></p>
+<pre class="hljs"><code><div>  <span class="hljs-comment">// A, B, C bagimsiz siniflar, hic bir base class a bagli degil</span>
+  <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">A</span>{</span>};
+  <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">B</span>{</span>};
+  <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">C</span>{</span>};
+
+  <span class="hljs-comment">// Type Erasure idiom ile bu siniflari ayni turmus gibi kullanmak istiyorum</span>
+  <span class="hljs-comment">// Sunlari inheritance kullanmadan legal yapalim</span>
+  <span class="hljs-comment">//ex:</span>
+  func(A);
+  func(B);
+  func(C);
+
+  <span class="hljs-comment">// ex</span>
+  <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Nec</span> {</span>A}; 
+  <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Nec</span> {</span>B}; 
+  <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Nec</span> {</span>C}; 
+
+</div></code></pre>
+<p>kullanilan terimler: Concept, Model</p>
+<ul>
+<li>concept sinif model sinifa bir interface saglar</li>
+<li>virtual dispatch i kullanacagiz ancak tamamen implementasyonda kalacak. Yani client siniflar arasinda bir inheritance iliskisi olmayacak.</li>
+</ul>
+<blockquote>
+<p>C++20 Concept degil</p>
+</blockquote>
+<p><em>ex</em><br>
+<strong>STEP-1: wrtite a concept and a model class</strong><br>
+<strong>Concept class: Interface i gosterir</strong><br>
+<strong>Model class: that overrides the interface using ErasedType</strong></p>
+<ul>
+<li>1: Create a concept class that shows the common interface as an abstrat class</li>
+<li>2: Create a model class, which uses virtual dispatch mechanism to implement the concept class interface according to the template parameter Erased type</li>
+</ul>
+<pre class="hljs"><code><div>  <span class="hljs-comment">// 1. Concept class: Interface i gosterir</span>
+  <span class="hljs-comment">// Concept olarak kullanilacak sinif model olarak kullanilack siniflara bir interface saglar</span>
+  <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AnimalConcept</span> {</span>
+  <span class="hljs-keyword">public</span>:
+      <span class="hljs-keyword">virtual</span> ~AnimalConcept = <span class="hljs-keyword">default</span>;
+      <span class="hljs-function"><span class="hljs-keyword">virtual</span> <span class="hljs-keyword">void</span> <span class="hljs-title">cry</span><span class="hljs-params">()</span> </span>= <span class="hljs-number">0</span>;
+  };
+
+  <span class="hljs-comment">// 2. Model class: overrides the interface using an ErasedType</span>
+  <span class="hljs-keyword">template</span> &lt;<span class="hljs-keyword">typename</span> ErasedType&gt;
+  <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AnimalModel</span> :</span> <span class="hljs-keyword">public</span> AnimalConcept {
+  <span class="hljs-keyword">public</span>:
+      AnimalModel(<span class="hljs-keyword">const</span> ErasedType&amp; object) : object_(object){}
+
+      <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">cry</span><span class="hljs-params">()</span> <span class="hljs-keyword">override</span>
+      </span>{
+          object_.cry();  
+          <span class="hljs-comment">// AnimalModel.cry, ErasedType.cry i cagirir.</span>
+      }
+
+  <span class="hljs-keyword">private</span>:
+      ErasedType object_;
+  };
+</div></code></pre>
+<p><strong>Step-2: create a common type for erased types</strong><br>
+<strong>- Common type encapsulates the concept/model implementation in its private part</strong><br>
+<strong>Therefore, Client codes have nothing to do with the concept/model implementation</strong></p>
+<ul>
+<li>3.1: create the base type for erased types (Animal)</li>
+<li>3.2: Move the concept/model classes to the private part of the common type</li>
+<li>4: Create a concept type pointer that can refer to all Erased types as a private member of the common type</li>
+<li>5: Add non-virtual interface functions for the Concept class interface</li>
+<li>6: Create a template ctor to construct common type from any of the erased types</li>
+</ul>
+<pre class="hljs"><code><div>  <span class="hljs-comment">// 3.1: create the base type for erased types (Animal)</span>
+  <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Animal</span> {</span>
+  <span class="hljs-keyword">public</span>:
+      
+      <span class="hljs-comment">// 6. Create a template ctor to construct a common type from any of the erased types</span>
+      <span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> ErasedType&gt;
+      <span class="hljs-title">Animal</span><span class="hljs-params">(ErasedType&amp;&amp; x)</span> : <span class="hljs-title">uptr</span><span class="hljs-params">(<span class="hljs-built_in">std</span>::make_unique&lt;AnimalModel&gt;&gt;(&lt;<span class="hljs-built_in">std</span>::forward&lt;ErasedType&gt;&gt;(x)))</span> </span>{}
+          <span class="hljs-comment">// note that </span>
+          <span class="hljs-comment">//  6.1. a model type is created from erased type </span>
+          <span class="hljs-comment">//  6.2.  pointer is concept type but refers to the newly created model type</span>
+
+      <span class="hljs-comment">// 5. Add non-virtual interface functions for the Concept class interface.</span>
+      <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">cry</span><span class="hljs-params">()</span>
+      </span>{
+          <span class="hljs-comment">// Non-virtual interface functions of the common type use virtual dispatch mechanism (via model type pointer) in their implementation.</span>
+          uptr-&gt;cry();
+      }
+  
+
+  <span class="hljs-keyword">private</span>:
+      <span class="hljs-comment">// 3.2: Move the concept/model classes to the private part of the common type </span>
+      <span class="hljs-comment">//    Note that client codes have nothing to do with the concept/model implementation</span>
+      <span class="hljs-comment">//3 ----------------------</span>
+      <span class="hljs-comment">// 1. Concept Class</span>
+      <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AnimalConcept</span> {</span>
+      <span class="hljs-keyword">public</span>:
+          <span class="hljs-keyword">virtual</span> ~AnimalConcept = <span class="hljs-keyword">default</span>;
+          <span class="hljs-function"><span class="hljs-keyword">virtual</span> <span class="hljs-keyword">void</span> <span class="hljs-title">cry</span><span class="hljs-params">()</span> </span>= <span class="hljs-number">0</span>;
+      };
+
+      <span class="hljs-comment">// 2. Model class</span>
+      <span class="hljs-keyword">template</span> &lt;<span class="hljs-keyword">typename</span> ErasedType&gt;
+      <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AnimalModel</span> :</span> <span class="hljs-keyword">public</span> AnimalConcept {
+      <span class="hljs-keyword">public</span>:
+          AnimalModel(<span class="hljs-keyword">const</span> ErasedType&amp; object) : object_(object){}
+
+          <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">cry</span><span class="hljs-params">()</span> <span class="hljs-keyword">override</span>
+          </span>{
+              object_.cry();
+          }
+
+      <span class="hljs-keyword">private</span>:
+          ErasedType object_;
+      };
+      <span class="hljs-comment">// 3 ----------------------</span>
+
+      <span class="hljs-comment">// 4. Create a concept type pointer that can refer to all Erased types</span>
+      <span class="hljs-built_in">std</span>::<span class="hljs-built_in">unique_ptr</span>&lt;AnimalConcept&gt; uptr;
+          <span class="hljs-comment">// private veri elemani</span>
+          <span class="hljs-comment">// Taban sinif pointer, turemis sinifi gosterebilir</span>
+          <span class="hljs-comment">// Dolayisiyla, uptr AnimalModel turunden bir nesneyi de gosterebilir</span>
+  }
+
+  <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Cat</span> {</span>
+  <span class="hljs-keyword">public</span>:
+      <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">cry</span><span class="hljs-params">()</span>
+      </span>{
+          <span class="hljs-built_in">std</span>::<span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-string">"miyav\n"</span>;
+      }
+  };
+
+  <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Dog</span> {</span>
+  <span class="hljs-keyword">public</span>:
+      <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">cry</span><span class="hljs-params">()</span>
+      </span>{
+          <span class="hljs-built_in">std</span>::<span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-string">"hav\n"</span>;
+      }
+  };
+
+  <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Bird</span> {</span>
+  <span class="hljs-keyword">public</span>:
+      <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">cry</span><span class="hljs-params">()</span>
+      </span>{
+          <span class="hljs-built_in">std</span>::<span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-string">"cik cik\n"</span>;
+      }
+  };
+
+  <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span>
+  </span>{
+      Animal a{ Bird{} };
+      Animal b{ Dog{} };
+      Animal c{ Cat{} };
+
+      a.cry();
+      b.cry();
+      c.cry();
+
+      <span class="hljs-built_in">vector</span>&lt;Animal&gt; vec;
+
+      vec.emplace_back(Cat{})
+  }
+
+  <span class="hljs-comment">// run-time polymorphismi icin kalitim'a gore daha saglikli bir alternatif yaratir.</span>
+  <span class="hljs-comment">// - kalitimin getirdigi bagimlilik yok</span>
+  <span class="hljs-comment">// - yeterki turlerin ortak bir subinterface i olsun</span>
+</div></code></pre>
+<p>Unique ptr kullandigimiz icin copy ctor deleted edilmis durumda bunu duzeltelim:</p>
+<ul>
+<li>Boylelikle, concept nesneleri birbrine kopyalanabilir olsun</li>
+<li>concept class is an abstract class. To support copy, we can write a clone interface</li>
+</ul>
+<p><strong>Step-3</strong><br>
+<strong>Support copy operation between concept objects</strong></p>
+<ul>
+<li>7.1: add a copy/clone interface for the concept class, which is an abstract class</li>
+<li>7.2: add implementation of the (polymorphic) copy/clone interface within the modell class</li>
+<li>7.3: write the copy ctor for the common type</li>
+</ul>
+<p><em>ex</em></p>
+<pre class="hljs"><code><div>  <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Animal</span> {</span>
+  <span class="hljs-keyword">public</span>:
+      <span class="hljs-comment">// 6</span>
+      <span class="hljs-function"><span class="hljs-keyword">template</span>&lt;<span class="hljs-keyword">typename</span> ErasedType&gt;
+      <span class="hljs-title">Animal</span><span class="hljs-params">(ErasedType&amp;&amp; x)</span> : <span class="hljs-title">uptr</span><span class="hljs-params">(<span class="hljs-built_in">std</span>::make_unique&lt;AnimalModel&gt;&gt;(&lt;<span class="hljs-built_in">std</span>::forward&lt;ErasedType&gt;&gt;(x)))</span> </span>{}
+
+      <span class="hljs-comment">// 7.3: write the copy ctor for the common type</span>
+      Animal(<span class="hljs-keyword">const</span> Animal &amp;other) : uptr(other.uptr-&gt;copy()) {}
+
+      <span class="hljs-comment">// 5</span>
+      <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">cry</span><span class="hljs-params">()</span>
+      </span>{
+          <span class="hljs-comment">// non-virtual interface function</span>
+          uptr-&gt;cry();
+              <span class="hljs-comment">// ????</span>
+      }
+  
+  <span class="hljs-keyword">private</span>: <span class="hljs-comment">// 3</span>
+      <span class="hljs-comment">// 1</span>
+      <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AnimalConcept</span> {</span>
+      <span class="hljs-keyword">public</span>:
+          <span class="hljs-keyword">virtual</span> ~AnimalConcept = <span class="hljs-keyword">default</span>;
+          
+          <span class="hljs-comment">// 7.1: add a copy/clone interface for the concept class, which is an abstract class</span>
+          <span class="hljs-function"><span class="hljs-keyword">virtual</span> <span class="hljs-built_in">std</span>::<span class="hljs-built_in">unique_ptr</span>&lt;AnimalConcept&gt; <span class="hljs-title">copy</span><span class="hljs-params">()</span> <span class="hljs-keyword">const</span> </span>= <span class="hljs-number">0</span>;
+          
+          <span class="hljs-function"><span class="hljs-keyword">virtual</span> <span class="hljs-keyword">void</span> <span class="hljs-title">cry</span><span class="hljs-params">()</span> </span>= <span class="hljs-number">0</span>;
+      };
+
+      <span class="hljs-comment">// 2</span>
+      <span class="hljs-keyword">template</span> &lt;<span class="hljs-keyword">typename</span> ErasedType&gt;
+      <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AnimalModel</span> :</span> <span class="hljs-keyword">public</span> AnimalConcept {
+      <span class="hljs-keyword">public</span>:
+          AnimalModel(<span class="hljs-keyword">const</span> ErasedType&amp; object) : object_(object){}
+
+          <span class="hljs-comment">// 7.2: add implementation of the (polymorphic) copy/clone interface within the modell class</span>
+          <span class="hljs-function"><span class="hljs-built_in">std</span>::unique_tr&lt;AnimalConcept&gt; <span class="hljs-title">copy</span><span class="hljs-params">()</span> <span class="hljs-keyword">const</span> <span class="hljs-keyword">override</span>
+          </span>{
+              <span class="hljs-keyword">return</span> <span class="hljs-built_in">std</span>::make_unique&lt;AnimalModel&gt;(*<span class="hljs-keyword">this</span>);
+          }
+
+          <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">cry</span><span class="hljs-params">()</span> <span class="hljs-keyword">override</span>
+          </span>{
+              object_.cry();
+          }
+
+      <span class="hljs-keyword">private</span>:
+          ErasedType object_;
+      };
+
+      <span class="hljs-comment">// 4</span>
+      <span class="hljs-built_in">std</span>::<span class="hljs-built_in">unique_ptr</span>&lt;AnimalConcept&gt; uptr;
+  }
+
+  <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Cat</span> {</span>
+  <span class="hljs-keyword">public</span>:
+      <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">cry</span><span class="hljs-params">()</span>
+      </span>{
+          <span class="hljs-built_in">std</span>::<span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-string">"miyav\n"</span>;
+      }
+  };
+
+  <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Dog</span> {</span>
+  <span class="hljs-keyword">public</span>:
+      <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">cry</span><span class="hljs-params">()</span>
+      </span>{
+          <span class="hljs-built_in">std</span>::<span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-string">"hav\n"</span>;
+      }
+  };
+
+  <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Bird</span> {</span>
+  <span class="hljs-keyword">public</span>:
+      <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">cry</span><span class="hljs-params">()</span>
+      </span>{
+          <span class="hljs-built_in">std</span>::<span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-string">"cik cik\n"</span>;
+      }
+  };
+
+  <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span>
+  </span>{
+      <span class="hljs-built_in">vector</span>&lt;Animal&gt; avec;
+      
+      avec.emplace_back(Dog())
+      avec.emplace_back(Cat())
+      avec.emplace_back(Bird())
+
+      <span class="hljs-keyword">for</span>(<span class="hljs-keyword">auto</span>&amp;a : vec) {
+          a.cry();
+      }
+  }
+</div></code></pre>
+<blockquote>
+<p>Bastan beri standard aracin kalitim yerine type erasure olmasi dusunulmus.<br>
+tek sorun: implementatasyonu karisik<br>
+ancak bir suru type erasure kutuphanesi var</p>
+</blockquote>
+<p>My summary:<br>
+Ortak bir interface subsetine sahip birbirinden farkli turleri (ErasedTypes) ayni tur gibi kullanmak icin (ayni container da tutma), C deki void pointer yerine ortak bir tur olusturmak istiyoruz. Bu tur Erased type lar arasinda bagimlilik olusturmadan ortak interface i user a sunar.</p>
+<ul>
+<li>Bu amacla ortak interface sahibi bir abstract class (concept) olusturyuyoruz.</li>
+<li>Concepti inherite eden ve ErasedType olarak kullanilacak herhangi bir turu encapsulate eden bir model (template) class olusturuyoruz. Model class, concept class daki abstract interface i, encapsulate ettigi ErasedType i kullanarak implement eder.</li>
+<li>Son olarak bir common Type olusturuyoruz. CommonType, herangi bir erased type tan olusturulabilir. Copyable veya moveable olabilir.
+Common Type ortak interface'i kullaniciya sunar.</li>
+</ul>
+<p>Sonuc olarak, virtual dispatch mekanizmasi yeni olusturulan common type in private kisminda user dan saklanir.
+ErasedType lar arasinda ortak bir interface olmasi yeterli, tamamen birbirinden farkli olabilirler.</p>
+
+</body>
+</html>
