@@ -1,0 +1,609 @@
+# polymorphic type is wrong, polymorphic behaviour is correct
+    - dinamik
+    - pointerlarla yonetecegiz
+    - birden fazla pointer ayni nesneyi gosterebilir
+    - life time i yonetecegiz
+    - kalitim kullanildiginda tek bir ?? olusturamiyoruz
+       value type???
+        herkesin value su kendine, A =B, sonrasinda ve oncesinde A ve B bagimsiz
+# kalitimla
+    - yeni bir tur olusturuyoruz
+    - davranisi ayarlamak yerine turun kendisini olsuturuyoruz
+    - kalitim. int, double a uvey evlat muamelesi yapiyor.
+      Bir wrapper yazmak gerekiyor
+
+# Eric Niebler:
+    If I could go back in time,
+    instead of virtual functions ...
+    .... I would add language support for type-erasure and concepts
+
+
+# Type Erasure
+
+    - concept sinif
+    - model (template) class that inherits concept class
+    - model implements the interface of concept
+    - 
+    - we made these nested type, and move to the private interface
+    - client late template ctor sayesinde common type i istedigi gibi init. edebilecek
+    - common type in private elemani olarak concept turunden nesneyi gosterecek bir pointer var (unique ptr)
+
+  _ex_
+  ```cpp
+    template<typenmae T>
+    void print(const T& tval)
+    {
+        std::cout << tval << "\n";
+    }
+
+    class Printable {
+    public:
+        template<typename T>
+        Printable(const T& x) : mptr{std::make_unique<Model<T>>(x)}
+
+        // Copyable
+        Printable(const Printable& other) : mptr{othre.mprt->clone()}{} 
+        Printable& operator=(const Printable& other)
+        {
+            *this = Printable(other);
+            // copy ctor return type is the pbject
+        }
+
+        // Moveable 
+        Printable(Printable&&) = default;
+        Printable& operator=(Printable&) = default;
+
+        // interface
+        friend void print(const Printable& p)
+        {
+            p.mptr->print_impl();   // virtual dispatch
+
+            // friend cuku mptr yi kullanacak
+        }
+
+
+    private:
+        // client asagidaki kodun hic bir kismini gormez, nilmes
+        struct Concept {
+            virtual ~Concept() = default;
+            virtual void print_impl() const = 0;
+
+            virtual std::unique_ptr<Concept> clone() const = 0;
+        };
+
+        template<typename T>
+        struct Model final : Concept {
+            Model(const T& x) : mx(x) {};
+
+            void print_impl() const override 
+            {
+                print(mx);      // global function, which mught be defined before
+            }
+
+            std::unique_ptr<Concept> clone() const override
+            {
+                return std::make_unique<Model>(*this);
+            }
+
+            T mx;
+        };
+
+        std::unique_ptr<Concept> mptr;
+            // Can refer to Concept or Model
+    };
+
+    int main()
+    {
+        Printable p1(12);
+        Printable p2(3.4);
+        Printable p3(Date{24, 11, 2021});
+        print(p1);
+        print(p2);
+        print(p3);
+
+        // p1, p2 ve p3 un turu silindi, sadece Printable kaldi
+
+            
+        vector<Printable> pvec;
+        pvec.emplace_back(12);
+        pvec.emplace_back(12.23);
+        pvec.emplace_back(Date{24, 11, 2021}});
+
+        std::String name{"kadir altindag"};
+        Date bdate{12, 5, 1998};
+        pvec.emplace_back(name);
+        pvec.emplace_back(bdate);
+
+        for(const auto& p : pvec)
+            print(p);
+    }
+
+    // kendi sinifima hic dokunmadan bir global fonksiyon ile bir ozellik verebilecegiz
+    // - ??
+    // -> heap ??
+    // faydalari tekrar
+  ```
+=========================== std::optional ================================
+# optional farkli amaclarla kullanilabilir
+  - bir degere sahip olmamasi, bir degere sahip olmasi kadar dogal
+
+  bu nerelerde ise yarar?
+  - fonksiyondan deger dondurme (deger olmasa bile optional var)
+  - bir fonksiyon benden parametresine deger istiyor, ancak deger gondermemem de dogal
+  - sinifin bir veri elemani olmasi
+    * a) soz konusu nesnenin o degeri olabilir de olmayabilir de
+  ```cpp
+    class Person{
+    private:
+        optional<Pet> x;
+    };
+  ```
+  - bir nesnenin duruma gore olmasi veya olmamasi. Value semantigi korumak istiyorum.
+   dinamik omurlu olmasin.
+
+> boost:optional ile std::optional arasinda ciddi farklar var
+> template teknikleri ile idaele yakin implement edilmis bir sinif
+
+
+# optional (Nullable type)
+  - Bir template parametresi var, CTAD a uygun.
+
+  _implementation representation_
+  ```cpp
+    template<typename T>
+    class Optional {
+    public:
+    private:
+        bool _initialized;
+        std::aligned_storage_t<sizeof(T), alignof(T)> _storage;
+    };
+  ```
+
+  _ex_
+  ```cpp
+    template<size_t n>
+    class Nec {
+        unsigned char buffer[n];
+    };
+
+    template<size_t n>
+    using optype = std::optional<Nec<n>>;
+
+    int main()
+    {
+        Optional<int>;
+    
+        std::cout << sizeof(Optional<int>) << "\n";
+        std::cout << sizeof(Optional<double>) << "\n";
+
+
+        std::cout << sizeof(optype<128>) << "\n";   // 129
+        std::cout << sizeof(optype<1024>) << "\n";   // 1025
+    }
+  ```
+
+## nasil olusturabiliriz:
+  _ex_
+  ```cpp
+    std::optional<int> x1;  // degersiz hayata baslatir
+    std::optional<int> x2{ 3456 };
+    std::optional<string> x3 {"mustafa"};
+
+    // CTAD
+    optional x1{12};
+    optional x2{"alican"};  // const char*
+    optional x3{"alican"s}; // string
+  ```
+
+  _ex_
+  ```cpp
+    class Point {
+    public:
+        Point(double, double, double);
+    };
+
+    int main()
+    {
+        std::optional<Point> x{1, 5, 7};    // syntax error
+        
+        std::optional<Point> x{std::in_place, 1., 5.5, 7.2};  // create object for me
+    }
+  ```
+  //in_place???
+
+  _ex_
+  ```cpp
+    optional<complex<double, double>> x{std::in_place, 34.4, 4.5};
+
+    optional<vector<int>> x{in_place, {1, 3, 5, 7, 9}};
+
+    auto pred = [](int a, int b) {return abs(a) < abs(b);};
+    optional<set<int, decltype(pred)>> x{in_place, {1,3,5,7,9}, pred};
+
+    auto x = make_optional(12);
+  ```
+
+> optional is a literal type
+
+  _ex_
+  ```cpp
+    constexpr optional<int> foo(optional<int> x)
+    {
+        return *x + 30;
+    }
+
+    int main()
+    {
+        constexpr auto val = foo(132);
+
+        std::cout << *val << "\n";
+    }
+  ```
+
+  _ex_
+  ```cpp
+    optional dx = 45.98;
+    auto dy = dx;
+  ```
+
+sarmalanan turler birbirine donusturulebilirse, optional objelerde birbirine donusturulebilir
+  ex_
+  ```cpp
+    optional<int> x = 34;
+
+    optional<double> y = x;
+  ```
+
+  _ex_
+  ```cpp
+    int a[10]{};
+
+    optional x = a;
+
+    optional x = "mustafa"; // const char
+
+    optional<string> x = "mustafa"  // string
+    optional x = "mustafa"s;        // string 
+  ```
+
+## nullopt_t
+  - optional nesnesinde bos bir obje olusturmak veya optionali bos hake getirmek icin kullanilanilir
+
+  _ex_
+  ```cpp
+    // su ikisi de bos bir nesne olusturur
+    optional<int> x{ nullopt };
+    optional<int> x;
+
+
+    //
+    optional<int> x(34);
+    x = nullopt;        // optional x objesini bosaltir (copy asignment)
+
+    if(x) { std::cout << "optional dolu;" }
+    else  { std::cout << "optional  bos;" }
+  ```
+
+  _ex_
+  ```cpp
+    optional<int> x(34);
+    std:: cout << (x ? "has value" : "has no value");
+
+    if (x.has_value())
+    {
+        std:cout << "optional dolu";
+    }
+  ```
+
+  _ex_
+  ```cpp
+    optional<int> x(34);
+
+    if(x == nullopt) { cout << "optional bos"; }
+  ```
+
+# optinal nesnesine nasil erisilir?
+  - operator*
+    - nesne bossa exception throw etmez
+  - ok operator
+  - 
+
+  _ex_
+  ```cpp
+    optional<int> x;
+
+    try {
+        std::cout << *x << "\n";    // ub
+    } catch () {
+        std::cout << "exception caught";
+    }
+  ```
+
+  _ex_
+  ```cpp
+    optional<int> x(34);
+
+    x = 98;     // valid
+    *x = 56;    // valid, operator atama fonksiyonu
+  ```
+
+  _ex_
+  ```cpp
+    optional<Date> x {in_place, 24, 11, 2021};
+
+    cout << *x << "\n";
+    cout << x->month_day() << "\n";
+  ```
+
+> return type in optional olmasina dikkat
+  _ex_
+  ```cpp
+    int* foo();
+
+    int main()
+    {
+        if(int* ptr = foo()) {
+            // tanimlanan ptr nin degeri direk lojik yorumlamaya tabi tutulur
+            // ptr burada kullanilabilir
+        }
+    }
+  ```
+
+---
+  _ex_
+  ```cpp
+    // dynamic case
+    class Base {
+    public:
+        virtual ~Base() = default;
+    }; 
+
+    class Der : public Base {
+    public:
+        void derfoo();
+    };
+
+    void gf(Base* ptr)
+    {
+        if(Der* dp = dynamic_cast<Der*>(ptr))
+        {
+            // to avoid scope leakage
+        }
+    }
+
+    // ???
+  ```
+---
+
+  _ex_
+  ```cpp
+    std::optional<std::string> foo();
+
+    int main()
+    {
+        if(auto op = foo()) {
+            // optional is a NULLable type
+
+            op->append();
+        }
+    }
+  ```
+
+  _ex_
+  ```cpp
+    optional<string> op{"murat hepeyiler"};
+
+    try{
+        std::cout << op.value() << "\n";
+        op.value().pop_back();
+        std::cout << *op << "\n"
+    } catch(const std::bad_optional_access& ex) {
+        std::cout << "exception caught" << ex.what() << "\n";
+    }
+
+    // ??
+  ```
+
+## .value_or()
+  - doluysa optional in degeri
+  - bossa bizim gonderdigimiz deger
+
+  _ex_
+  ```cpp
+    optional<string> op1;
+    optional<string> op2("necati ergin");
+
+    cout << op1.value_or("no name") << ""\n;
+    cout << op2.value_or("no name") << ""\n;
+  ```
+
+## return type is not reference
+
+  _ex_
+  ```cpp
+    optional<string> op1;
+    optional<string> op2("necati ergin");
+
+    string &r = op1.value_or("osman erenoglu");
+    cout 
+
+    // ???
+  ```
+
+## .emplace
+  -> zaten deger varsa once destroy eder, sonra yeniden nesne olusturur 
+  (dtor cagirilir)
+
+  _ex_
+  ```cpp
+    optional<Date> op;
+
+    op.emplace(2, 5, 1987);
+  ```
+
+  _ex_
+  ```cpp
+    optional<Date> op(in_place, ...);
+
+    op.emplace(2, 5, 1987);
+  ```
+
+## Hayati nasil biter?
+  _ex_
+  ```cpp
+    class Myclass {
+    public:
+        Myclass(int x)
+        {
+            std::cout << "Myclass(int)\n";
+        }
+
+        ~Myclass()
+        {
+            std::cout << "dtor\n";
+        }
+    };
+
+
+    int main()
+    {
+        std::cout << "main basladi";
+        {
+            std::optional<Myclass> op(in_place, 12);
+        }
+
+        op.reset();
+        std::cout << "main devam ediyor";
+    }
+  ```
+### reset
+  _ex_
+  ```cpp
+        std::cout << "main basladi";
+        std::optional<Myclass> op(in_place, 12);
+
+        op.reset(); // degeri bos hale getirir
+
+        std::cout << "main devam ediyor";
+  ```
+
+### op = std::nullopt
+  _ex_
+  ```cpp
+        std::cout << "main basladi";
+        std::optional<Myclass> op(in_place, 12);
+
+        op = nullopt;
+
+        std::cout << "main devam ediyor";
+  ```
+
+### op = {}
+  _ex_
+  ```cpp
+    std::cout << "main basladi";
+    std::optional<Myclass> op(in_place, 12);
+
+    op = {};
+
+    std::cout << "main devam ediyor";
+  ```
+
+## Optional specialization larina dikkat
+  - pointer
+  - optional<bool>
+
+  _ex_
+  ```cpp
+    void func(optional<int*> op)
+    {
+        // if(*op) // op nin degeri var mi?
+        
+        // if(**op) // op nin degeri olan pointer nullptr degilse
+
+
+        if(*op && **op)
+        {
+            std::cout << **op << "\n";
+            delete *op;
+        }
+    }
+
+    func(new int{ 98 });
+  ```
+
+
+  _ex_
+  ```cpp
+    optional<bool> op;
+
+    if(op)
+        cout <<
+
+    if(*op)
+    
+    if(op && *op)
+
+    ??
+  ```
+
+# oerator==
+  _ex_
+  ```cpp
+    // ??
+  ```
+
+  _ex_
+  ```cpp
+    optional<bool> x;
+    optional<bool> y;
+    optional<int> z;
+
+    optional<bool> x;
+    optional y = true;
+    optional z = false;
+
+    cout << (x == y);           // false
+    cout << (x == false);       // false
+    cout << (x == true);        // false
+    cout << (x == nullopt);     // true
+
+    // ??
+
+  ```
+
+# Kullanim alanlari
+  1. geri donus degeri adres. Deger yoksa nullptr dondurur.
+  2. 
+
+> Eskiden:
+>  Duruma gore bir fonksiyonun deger gondermemesi normal ise C/C++ 3 farkli yol var
+>    ancak bunlardan hicbiri
+>  * ortak bir interface e sahip degil
+>  * her duruma uygun degil
+
+
+  3. fonksiton bool dondurur, out parametreye sahip
+  _ex_
+  ```cpp
+     bool func(int x, T *p);
+     // geri donus degeri true is p deki value set edilir
+  ```
+
+  4. fonksiyon pair dondurur
+
+  _ex_
+  ```cpp
+    set<int> myset{12, 56, 98};
+    pair<set<int>::iterator, bool> retval = myset.insert(56);
+
+    // insert basariliysa => pair.second = true
+    // insert basariliysa => pair.second = false
+
+    // pair in kullanmadigimiz return type i da construct oluyor
+  ```
+
+  _ex_
+  ```cpp
+    optional<string>
+  ```

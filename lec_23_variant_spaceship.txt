@@ -1,0 +1,848 @@
+# variant cont.
+
+  _ex_
+  ```cpp
+    using vtype = std::variant<int, double, std::string>;
+
+    cout << "sizeof(vtype) = " << sizeof(x) << "\n";
+  ```
+
+  _ex_
+  ```cpp
+    using vtype = std::variant<std::regex, double, std::string>;
+
+    vtype x;
+
+    cout << "sizeof(x) = " << sizeof(x) << "\n";    // 32
+  ```
+
+  _ex_
+  ```cpp
+    using vtype = std::variant<std::mt19937, double, std::string>;
+    vtype x;
+
+    cout << "sizeof(x) = " << sizeof(x) << "\n";    // 5008
+  ```
+
+  _ex_
+  ```cpp
+    using age_t = int;
+    using weight_t = double;
+    using name_t = std::string;
+
+    std::variant<age_t, weight_t, name_t> vx;
+    vx = 26;
+    cout << "yas = " << get<age_t>() << "\n";
+
+    ...
+  ```
+
+## .emplace
+  _ex_
+  ```cpp
+    variant<string, int, double, string> vx;
+
+    vx.emplace<0>("murat");
+    cout << get<0>(vx) << "\n";
+    
+    vx.emplace<3>("murat");
+    cout << get<3>(vx) << "\n";
+  ```
+
+## polymorphic behaviour
+  _ex_
+  ```cpp
+    class Circle {
+    public:
+        void render()
+        {
+            std::cout << "circle is being rendered\n";
+        }
+    };
+
+    class Square {
+    public:
+        void render()
+        {
+            std::cout << "square is being rendered\n";
+        }
+    };
+
+    class Polygon {
+    public:
+        void render()
+        {
+            std::cout << "polygon is being rendered\n";
+        }
+    };
+
+    class Triangle {
+    public:
+        void render()
+        {
+            std::cout << "triangle is being rendered\n";
+        }
+    };
+
+    using shape = std::variant<Circle, Square, Triangle, Polygon>;
+
+    int main()
+    {
+        vector<shape> svec;
+
+        svec.emplace_back(Circle{});
+        svec.emplace_back(Square{});
+        svec.emplace_back(Triangle{});
+        svec.emplace_back(Polygon{});
+
+        for(Auto& object : svec) {
+            visit([](auto &object) { object.render(); })
+        }
+    }
+
+  ```
+
+  _ex_
+  ```cpp
+    enum class ErrorCode
+    {
+        Ok, 
+        SystemError,
+        NetworkError
+    }
+    std::variant<std::string, ErrorCode> FetchNameFromNetwork(int i)
+    {
+        if(i == 0)
+            return ErrorCode::SystemError;
+
+        if(i == 1)
+            return ErrorCode::SystemError;
+
+        return std::string("Hello World!");
+    }
+
+    int main()
+    {
+        if(auto response = FetchNameFromNetwork(0); std::holds_alternative<std::string>(response))
+            std::cout << std::get<std::string>
+            ....
+    }
+  ```
+
+  _ex_
+  ```cpp
+    using dpair = std::pair<double, double>;
+    using roots = std::variant<dpair, double, std::monostate>;
+
+    roots get_roots(double a, double b, double c)
+    {
+        auto delta = b * b - 4 * a * c;
+
+        if(delta > 0.)
+        {
+            auto rootdelta = std::sqrt(delta);
+            return std::make_pair((-b - rootdelta) / (2. * a), (-b + rootdelta) / (2. * a));    // pair
+        }
+
+        if(!delta)
+        {
+            return -b / 2. / a;     // double
+        }
+
+        return std::monotstate;
+    }
+
+    struct RootPrint {
+        void operator()(const dpair& param) const
+        {
+            std::cout << "iki kok var" << param.first << " " << param.second << " ";
+        }
+
+        void operator()(double param) const
+        {
+            std::cout << "tek kok var" << param.first << " " << param.second << " ";
+        }
+
+        void operator()(std::monostate) const
+        {
+            std::cout << "kok yok\n";
+        }
+    };
+
+    int main()
+    {
+        visit(RootPrint{}, get_roots(1, 10., 16));      // x^2 + 10x + 16
+        visit(RootPrint{}, get_roots(3, 9., 8));        // x^2 + 10x + 16
+        visit(RootPrint{}, get_roots(1, 8., 16));       // x^2 + 8x + 16
+    }
+
+  ```
+
+  _ex_
+  ```cpp
+    class Cat {
+    public:
+        Cat(std::string name) : m_name{std::move(name)} {}
+
+        void meow()
+        {
+            std::cout << m_name << "miyav, miyav, miyav\n";
+        }
+
+    private:
+        std::string m_name;
+    }; 
+
+    class Dog {
+    public:
+        Dog(std::string name) : m_name{std::move(name)} {}
+
+        void bark()
+        {
+            std::cout << m_name << "hav hav hav\n";
+        }
+
+    private:
+        std::string m_name;
+    }; 
+
+    class Lamb {
+    public:
+        Lamb(std::string name) : m_name{std::move(name)} {}
+
+        void bleat()
+        {
+            std::cout << m_name << "me'liyor\n";
+        }
+
+    private:
+        std::string m_name;
+    }; 
+
+    using Animal = std::variant<Dog, Cat, Lamb>;
+
+    template<typenmae T>
+    bool is_type(const Animal& a)
+    {
+        return std::holds_alternative<T>(a);
+    }
+
+    struct AnimalVoice {
+        void operator()(Dog& dog) const {
+            dog.bark();
+        } 
+
+        void operator()(Cat& cat) const {
+            cat.meow();
+        } 
+
+        void operator()(Lamb& lamp) const {
+            lamb.bleat();
+        } 
+    };
+
+    int main()
+    {
+        using namepsace std;
+
+        vector<Animal> avec{Cat{"pamuk"}, Dok{"soko"}, Lamb{"kuzucuk"}, Dog{"Kont"}};
+
+        // way - 1
+        for(Animal& a : avec)
+        {
+            switch (a.index())
+            {
+                case 0 : get<Dog>(a).bark(); break;
+                case 1 : get<Cat>(a).meow(); break;
+                case 2 : get<Lamb>(a).bleat(); break;
+            }
+        }
+
+        // way - 2
+        for(Animal& a : avec)
+        {
+            if(auto dog_ptr = get_if<Dog>(&a))
+                dog_ptr->bark();
+            
+            else if(auto cat_ptr = get_if<Cat>(&a))
+                cat_ptr->meow();
+
+            if(auto lamb_ptr = get_if<Lamb>(&a))
+                lamb_ptr->bleat();
+        }
+
+        // way - 3
+        for(Animal& a : avec)
+            visit(AnimalVoice{}, a);
+
+        cout << count_if(begin(avec), end(avec), is_type<Dog>) << " tane kopek var\n";
+        cout << count_if(begin(avec), end(avec), is_type<Cat>) << " tane kedi var\n";
+    }
+  ```
+
+## ??? video: avantaj, dezavantaj
+
+  _ex_
+  ```cpp
+    using vtype = variant<double, int, string>;
+
+    vector<vtype> vec{34, 67, 2.8389, "murat", "deniz"};
+    vec.emplace_back(87);
+    vec.emplace_back(5.12);
+    vec.emplace_back("Huseyin");
+
+    for(const auto& val : vec)
+    {
+        visit([](const auto& val) { 
+            if constexpr(std::is_same_v<decltype(x), string>)
+                cout << quoted(x) << "\n";
+            else
+                cout << val << " "; }, val);
+
+    }
+  ```
+
+======================= any ==========================================
+- void* pointeri kullanmaya bir alternatiftir
+
+  _ex_
+  ```cpp
+        any x;
+        any y = 4.5;
+
+        y = "mustafa";
+        y = 3456;
+  ```
+
+# default ctorable, creates an empty any object
+
+  _ex_
+  ```cpp
+    any x;
+    any y{};
+    any z = {};
+  ```
+
+# ctor is not explicit
+  _ex_
+  ```cpp
+    any a1{ 13 };   // int
+    any a2 = 5.6;   // double 
+    any a3 = "remzi";   // const char* 
+    any a4 = "remzi"s;  // string
+    any a5 = bitset<16>(456u);  // bitset
+    any a6 {vector<int>{2, 3, 5, 7, 11}};
+  ```
+
+# in_place type disambiguiter olarka kullanilabilir
+  _ex_
+  ```cpp
+    any a = {in_place_type<string>, "necati"};  // string
+
+    any a{in_place_type<complex<double>>, 12, 5.5};
+    
+    any a{in_place_type<Date>, 14, 7, 1989};
+  ```
+
+## make_any, factory function
+  _ex_
+  ```cpp
+    auto a = make_any<string>(15, 'A');
+
+    auto a2 = make_any<Date>(4, 5, 1987);
+    
+    auto a3 = make_any<complex<double>>(1.1, 5.6);
+  ```
+
+## .has_value
+  _ex_
+  ```cpp
+    any x;
+
+    if(x.has_value())
+        cout << "deger tutuyor";
+    else
+        cout << "deger tutmuyor";
+
+    // if(x)        // error, any doesn't have operator bool function
+  ```
+
+##.reset
+  _ex_
+  ```cpp
+    any x { 3 };
+
+    x.reset();  // destructer i calistirir?
+
+  ```
+
+## .type()
+  - tuttugu degeri sorgulayabiliriz
+
+  _ex_
+  ```cpp
+    any x{ 13 };
+    any y{ Date{1, 5, 1987} };
+
+    cout << (x.type() == typeid(int)) << "\n"
+    cout << (y.type() == typeid(Date)) << "\n"
+  ```
+
+## any_cast
+  - istedigim turden degeri kullaniyorum
+  - cast edilen turu tutmazsa exception throw eder
+
+  _ex_
+  ```cpp
+    any x{ 2.35 };
+
+    try {
+        auto dval = any_cast<double>(x);
+    }
+    catch (const std::bad_any_cast& ex) {
+        std::cout << ex.what() << "\n";
+    }
+  ```
+
+  _ex_
+  ```cpp
+    any x{ 45 };
+
+    try {
+        auto r& = any_cast<int&>(x);
+    }
+    catch (const std::bad_any_cast& ex) {
+        std::cout << ex.what() << "\n";
+    }
+  ```
+
+  _ex_
+  ```cpp
+    any x{ "mustafa"s };
+
+    any_cast<string&>(x).append("can");
+
+    std::cout << any_cast<std::string>(x) << "\n";
+  ```
+
+  _ex_
+  ```cpp
+    any a;
+
+    cout << boolalpha;
+    std::cout << a.has_value() << "\n";
+
+    a = 45;
+    std::cout << a.has_value() << "\n";
+
+    a.reset();
+    std::cout << a.has_value() << "\n";
+
+    a = true;
+    std::cout << a.has_value() << "\n";
+
+    a = {};
+    std::cout << a.has_value() << "\n";
+  ```
+
+  _ex_
+  ```cpp
+    class Nec {
+    public:
+        Nec(int a, int b) : ma(a), mb(b) {}
+    private:
+        int ma, mb;
+    };
+
+
+    int main()
+    {
+        any a;
+        a = 45;
+        a = Nec{3, 5};
+        a.emplace<Nec>(4, 6);
+        a.emplace<string>(100, 'A');
+
+        auto pred = [](int a, int b) {return std::abs(a) < std::abs(b)};
+
+        a.emplace<set<int, decltype(pred)>>({1, 4, 7, 9}, pred);
+    }
+  ```
+
+  _ex_
+  ```cpp
+    any a = 3.4;
+
+    auto val = any_cast<double>(a);
+    any_cast<double&>(a) += 4.5;
+
+    a = 'A';
+    if(auto pd = any_cast<double>(&a))
+    {
+        cout << "evet double turden deger: " << *pd << "\n";
+    }
+    else {
+        cout << "tutulan deger double turden degil\n";
+    }
+  ```
+
+any_cast<T>(a)      -> exception
+any_cast<T&>(a)     -> exception
+any_cast<T>(&a)     -> nullptr
+
+a.type()
+a.reset()
+a.swap()
+
+make_any
+a.has_value()
+
+en iyi kullanim alani -> void*
+========================== c++ 20 ===================================
+major:
+  - concept
+  - module
+  - `spaceship
+
+=============== spaceship operator <=>  ============================
+  _ex_
+  ```cpp
+    class Nec {
+    public:
+        bool operator==(const Nec& other) const     //*
+        {
+            return id == other.id;
+        }
+
+        bool operator!=(const Nec& other) const
+        {
+            return !(*this == other);
+        }
+
+        bool operator<(const Nec& other) const      // *
+        {
+            return id < other.id;
+        }
+
+        bool operator>(const Nec& other) const
+        {
+            return other.id < *this;
+        }
+
+        ... ???
+
+    private:
+        int id;
+    };
+
+
+    Nec mynec(12);
+
+    mynec == 5; // ok
+    5 == mynec; // error
+  ```
+
+
+> yazilan 6 karsilastirma fonksiyonu tipik olarak operator< ve operator== kullanilarak yazilir.
+> bu kodu benim yerime derleyici yazsin
+
+  _ex_
+  ```cpp
+    class Nec {
+    public:
+        constexpr Nec(int) : m_id(x) {}
+
+        [[nodiscard]] friend constexpr ...
+
+    private:
+        int m_id;
+    };
+  ```
+
+
+# Deigisiklikler:
+## operator== yazildiginda derleyici operator!= i kendisi yazar
+    - 5 ==Nec{3} legal
+  _ex_
+  ```cpp
+    class Nec {
+    public:
+        Nec(int i) : m_id
+
+        bool operator==(const Nec& other) const
+        {
+            return m_id == other.m_id;
+        }
+
+    private:
+        int m_id;
+    };
+
+    int main()
+    {
+        Nec n1{13}, n2{98};
+
+        cout << boolalpha;
+        cout << "(n1 == n2) : " << (n1 == n2) << "\n";
+        cout << "(n1 != n2) : " << (n1 != n2) << "\n";
+
+
+        // ctor explicit degil
+        cout << (13 == n1) << "\n";     // this was a syntax error before C++20
+                                        // sol operand Nec tur degil, bu yuzden global fonk yazardik
+
+        cout << (13 != n1) << "\n";     // not an error since c++20
+    }
+  ```
+
+## operator== i de derleyiciye yazdirabilir miyim?
+
+  _ex_
+  ```cpp
+    class Nec {
+    public:
+        Nec(int i) : m_id{i} {}
+        
+        // sunu yaptigimizda
+        bool operator==(const Nec&) const = default
+
+        // derleyici asagidaki kodu bizim icin yazar
+        bool operator==(const Nec&) const
+        {
+            return m_id == other.m_id && name == other.name;
+        }
+
+        bool operator !=(const Nec& other)
+        {
+            return !(*this == other);
+        }
+
+    private
+        int m_id;
+        std::string name;
+    };
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```

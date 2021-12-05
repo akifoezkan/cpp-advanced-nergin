@@ -1,0 +1,657 @@
+!!! ilk 30 dk yi kacirdim
+
+
+  _ex_
+  ```cpp
+    class UserRecord {
+    public:
+        UserRecord(std::string name, std::optional<std::string> nick, std::optional<int> age) :
+            m_name(std::move(name)), m_nick(nick), m_age(age) {}
+
+            friend std::ostream& operator<<(std::ostream &os, const UserRecord& user)
+            {
+                os << user.m_name << ' ';
+                if(user.m_nick)
+                {
+                    os << *user.m_nick << ' ';
+                }
+
+                if(user.m_age)
+                {
+                    os << *user.m_age <<  "yasinda";
+                }
+
+                return os;
+            }
+    private:
+        std::string m_name;
+        std::optional<std::string> m_nick;
+        std::optional<int> m_age;
+    };
+
+
+    int main()
+    {
+        UserRecord urx = {"Salih Korkusuz", "Salo", 40};
+        std::cout << urx << "\n";
+
+        UserRecord ury = {"Necati Ergin", std::nullopt, std::nullopt};
+        std::cout << ury << "\n";
+    }
+  ```
+===================== variant ==============================
+
+#reminder: union
+  - tum elemanlar ayni adreste,
+  - belirtilen turlerde 
+
+> C++ union int tutuyorsa onun double ina erismek undefined behaviour.
+> C deki kullanim amaci ayni veriye farkli turlerle erismek ama bu C++ da ub.
+> O yuzden C ye gore daha kisitli.
+
+  _ex_
+  ```cpp
+    union Data{
+        int x;
+        double d;
+        long c;
+        Nec x;
+    };
+  ```
+
+## dezavantajlari:
+  - tuttugu data-type in ne oldugunu soyleyen bir mekanizma yok
+
+  _ex_
+  ```cpp
+    // C de workaround: tagged/discriminated union
+
+    struct Data {
+        union {
+            int x;
+            double d;
+            long c;
+        };
+
+        int type;
+    };
+
+    int main()
+    {
+        Data mydata;
+        mydata.type = 0;    // type kodlari yazabiliriz
+        mydata.x = 987;     // legal
+    }
+  ```
+
+# std::variant
+  - yukaridaki gibi problemleri cozer
+  - cok kullanim temasi var
+    * polymorphic kalitima alternatif sunar:
+      - closed hierarchy (daha sonra ekleme yapilmayacak) ise
+      - visitor ile ortak davranis
+  - variant'in alternatifleri (sahip olabilecegi turler) dinamik bellek alani kullanmaz.
+    dolayisiyla pointe/ref semantiginin getirdigi belalar yok.
+    type erasure oluyor.
+
+## variantin elemani su turlerden alamaz:
+  - dizi
+  - ref
+  - void
+  - incomplete tur olamaz
+
+## ambiguity, ayni tur???
+
+  _ex_
+  ```cpp
+    variant<int, double, string> x;
+
+    // bu bir pointer degil, heap de bir alan kullanmaz.
+    // x de tutulacak alan onceden belli
+  ```
+## variant template class oldugu icin bir cok hata compile time da olacak
+
+## ayni turun cv-qualified bicimlerini tutabilir:
+
+  _ex_
+  ```cpp
+    variant<int, double, const int, volatile y> x; \\ ok
+  ```
+
+## exception handling ??
+
+# variant default init edilebilir
+    - ilk ogenin turunden init edilir
+    - value init edilir.
+
+  _ex_
+  ```cpp
+    variant<int, double, string> vx;    // ilk oge (int) turunden eleman tutar
+
+    std::cout << get<0>(vx) << "\n";
+  ```
+
+  _ex_
+  ```cpp
+    variant<Date, int, double, string> vx;
+
+    cout << get<0>(vx) << "\n";
+  ```
+
+## elemana erismek icin
+  1. get<index>, referans semantic
+  1. get<index>, referans semantic
+
+  _ex_
+  ```cpp
+    get<1> x = ???
+    cout <<  get<Date>(vx);
+  ```
+
+  _ex_
+  ```cpp
+    variant<Date, int, double, int> vx;
+
+    auto x = get<int>(vx);      // ubdefined behaviour ???
+
+    auto val get<float>(vx);    // syntax error
+    
+    auto val get<4>(vx);        // syntax error, out of range
+  ```
+
+  _ex_
+  ```cpp
+    class Myclass {
+    public
+        Myclass(int);
+    };
+
+    int main()
+    {
+        variant<int, Myclass, double> vx;   // ok  ??? 
+        
+        variant<Myclass, double> vx;   // syntax error, Myclass is not default ctorable
+    }
+  ```
+# aradan sora, monostate nedir?
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+    //??
+    variant<Date, Myclass, int, double> vx{in_place_index<0>, 3, 5, 1987};
+    variant<Date, Myclass, int, double> vx{in_place_index<1>, 10, 20};
+    variant<Date, Myclass, int, double> vx{in_place_type<Myclass>, 10, 20}; 
+    
+  ```
+
+## get kullanildiginda turun direk ayni olmasi lazim
+  _ex_
+  ```cpp
+    variant<char, double, float>  vx;
+    ??
+  ```
+
+# alternatif kontrol edimleden ???
+  _ex_
+  ```cpp
+    variant<char, double, float>  vx;
+
+    try {
+        std::cout << get<char>(vx);
+    }
+    catch(const std::exception& ex) {
+        std::cout << ex.what() << "\n";
+    }
+  ```
+
+# hangi tuden deger tutuyor sorgulamasi
+## holds alternative
+
+  _ex_
+  ```cpp
+    variant<char, double, float>  vx{4.5f};
+    
+    if(holds_alternative<double>(vx))
+    {
+        std::cout << "evet double tutuyor\n";
+    } 
+    else 
+    {
+        std::cout << "hayir double tutmuyor\n";
+    }
+  ```
+
+## index fonksiyonu
+  _ex_
+  ```cpp
+    variant<char, double, float>  vx{4.5f};
+    
+    ??
+  ```
+
+  _ex_
+  ```cpp
+    variant<char, double, float> vx{4.5f};
+
+    vx.
+  ```
+=================
+# monostate
+  - default ctorable
+
+  _ex_
+  ```cpp
+    variant<monostate, int, double, Date> vx;
+  ```
+
+  _ex_
+  ```cpp
+    class Data {
+    public:
+        Data(int x) : mx{x} {}
+    private:
+        int mx;
+    };
+
+    int main()
+    {
+        variant<monostate, Data, int, double> vx;
+
+        cout << vx.index();     // 0
+
+        if(holds_alternative<monostate>(vx)) {
+            cout << "variant bos\n";    // monostate tutar aslinda
+        }
+    }
+  ```
+
+  _ex_
+  ```cpp
+    variant<monostate, Data, int, double> vx;
+    vx = 5;
+    vx = Data{12};
+    vx = 4.5;
+
+    vx = monostate{};
+    vx = {};
+    ??
+  ```
+
+  _ex_
+  ```cpp
+    variant<int, double, long> vx{3.4};
+
+    cout << vx.index();     // 1
+
+    vx = 12;
+    cout << vx.index();     // 0
+
+    vx = 45L;
+    cout << vx.index();     // 2
+
+    vx = {};    // ayni turden yeni bir variant nesnesi olusturu, onu atar
+    cout << vx.index();     // 0
+  ```
+
+  _ex_
+  ```cpp
+    variant<monostate, int, double, long, Date> v1{ 3.4 };
+    variant<monostate, int, double, long, Date> v2{ 456L };
+
+    ??
+  ```
+
+## get_if<type>
+  _ex_
+  ```cpp
+    variant<int, double, string> vx{"mustafa ceyhan"};
+
+    if(auto p = get_if<string>(&vx)) {
+        cout << *p << "\n";
+
+        // p = string* type
+    }
+    else
+    {
+        cout << "alternatif string degil\n"
+    }
+  ```
+
+## get_if<index>
+  _ex_
+  ```cpp
+    variant<int, double, string> vx{"mustafa ceyhan"};
+
+    if(auto p = get_if<2>(&vx)) {
+        cout << *p << "\n";
+
+        // p = string* type
+    }
+    else
+    {
+        cout << "alternatif string degil\n"
+    }
+  ```
+
+> return type nullptr ???
+
+## 
+  _ex_
+  ```cpp
+    variant<int, double, complex<double>> vx{in_place_index<2>, 3.5, 7.8};
+
+    cout << get<2>(vx) << "\n";
+  ```
+
+  _ex_
+  ```cpp
+    auto pred = [](int a, int b) {
+        return std::abs(a) < std::abs(b);
+    };
+
+    variant<set<int>, set<int, decltype(pred)>> vx{in_place_index<1>, {1, 4, 6, 9, -1}, pred};
+  ```
+# farkli tur varyant karsilastirma syntax error
+
+# ayni alternatifler icin degerler karsilastirilir
+  farkli alternatifler icin, alternatifin index i karsilastirilir
+  _ex_
+  ```cpp
+    variant<monostate, int, string> v1, v2{"mustafa"}, v3(123);
+    variant<monostate, string> v4;
+
+    cout << boolalpha;
+    cout << (v1 == v2);     // false
+                            // alternatifler farkli
+
+    cout << (v1 < v2);      // true 
+                            // alternatifi kucuk olan kucuk
+
+    cout << (v2 < v3);      // false 
+
+    v2 = 89;
+    cout << (v2 < v3);      // true, degerler karsilasitirili 
+  ```
+======================= std::visit =================================
+# std::visit
+  - global fonksiyon  
+  - alternatifin ne oldugunu bilmiyoruz (run-time) ve alternatife gore farkli kod seciyoruz
+
+visit olmasaydi:
+  _ex_
+  ```cpp
+
+    variant<int, double, string> vx(45.6);
+
+    if(vx.index() == 0)
+        std::cout << "(" << get<0>(vx) << ")\n";
+   
+   else if(vx.index() == 1)
+        std::cout << "[" << get<1>(vx) << "]\n";
+   
+   else if(vx.index() == 2)
+        std::cout << quoted(get<2>(vx)) << "\n";
+  ```
+bu is std::visit ile daha kolay olarak yapilabilir:
+> visit fonksiyonuna herhangi bir callable gonderilebilir
+
+  _ex_
+  ```cpp
+    struct Print {
+        void operator()(int x) const {
+            std::cout << "(" << x << ")";
+        }
+
+        void operator()(double x) const {
+            std::cout << "[" << x << "]";
+        }
+
+        void operator()(const string &x) const {
+            std::cout << quoted(x) << "\n";
+        }
+    };
+
+    int main()
+    {
+        variant<int, double, string> vx("murat hepeyiler");
+
+        visit(Print{}, vx);
+
+        vx = 4.5;
+
+        visit(Print{}, vx);
+    }
+  ```
+## aradan sonra hemen gelmedim
+  _ex_
+  ```cpp
+    struct Print {
+        template<typename T>
+        void operator()(const T& r)
+        {
+            std::cout << r << "\n"; 
+        }
+    };
+
+    variant<int, double, string> vx(4.5)
+    visit(Print{}, vx);
+  ```
+
+  _ex_
+  ```cpp
+    variant<int, double, string> vx(4.5)
+    
+    visit([](const auto& r){ std::cout << r << "\n"; }, vx);
+  ```
+
+  _ex_
+  ```cpp
+    struct triple {
+        template <typenmae T>                
+        void opereator()(T& t) const
+        {
+            t = t + t + t;
+        }
+    };
+
+    variant<string, int, double> vx{ 21 };
+    
+    std::cout << get<1>(vx) << "\n";
+    visit(triple{}, vx);
+
+    std::cout << get<1>(vx) << "\n";
+  ```
+
+  _ex_
+  ```cpp
+    variant<int, string, double> vx {"salih"};
+
+    std::cout << get<1>(vx).size() << "\n";
+
+    auto setdef = [](auto& val)) { val = remove_reference_t<decltype(val)>{} };
+        // default degerine ceker
+    
+    visit(setdef, vx);
+    std::cout << get<1>(vx).size() << "\n";
+  ```
+
+===========
+## overloader idiom
+
+  _ex_
+  ```cpp
+    template<typename ...Ts>
+    struct overload : Ts... {   // 1
+
+        using Ts::operator()...;    // 2
+        
+        // 1. parameter pack deki siniflardan public kalitim elde eder
+        // 2. butun taban siniflarin operator fonk. visible yaptik 
+
+    };
+
+    template<typename ...Ts>
+    overload(Ts...) -> overload<Ts...>;
+        // aggregate type oldugu icin C++20 oncesi deduction guide otomatik uretilmezdi
+
+    int main()
+    {
+        using namespace std;
+
+        variant<int, string> vx{123};
+
+        visit( overload{
+            [](int ival) {cout << "int : " << ival << "\n"},
+            [](const std::string& s) {cout << "string : " << s << "\n"},
+        }, vx); 
+    }
+  ```
+======================
+## Polymorphic behaviour 
+  -variant alternatives instead of Inheritance
+
+  _ex_
+  ```cpp
+    class Cat{};
+
+    class Dog{};
+
+    class Lamb{};
+
+    using Animal = std::variant<Dog, Cat, Lamb>;
+
+    int main()
+    {
+        vector<Animal> avec;
+
+        Animal vx;
+
+        visit([](const auto& t) {t.cry();}, vx);
+    }
+  ```
+  Dezavantaj
+  - hierarchy kapali (yeni tur icin butun turleri degistirmek gerekiyot)
+
+
+  Avantaj
+
+next class
+-variant
+-any
+- spaceship
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
