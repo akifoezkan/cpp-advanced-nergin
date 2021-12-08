@@ -1,0 +1,827 @@
+# ilk 5 dakika
+
+#
+                equality        ordering
+primary            ==              <=>
+secondary          !=           <> <= >=
+
+- secondary gerektigi durumda, derleyici tarafindan (primary kodlar
+  kullanilarak) yazilir.
+
+  ex:
+    a != b  => !(a == b)
+
+  _ex_
+  ```cpp
+    class Mint {
+    public:
+        Mint(int x = 0) : mx(x) {}
+
+        bool operator==(const Mint& x) const 
+        {
+            return mx == other.mx;
+        }
+
+    private:
+        int mx;
+    };
+
+    int main()
+    {
+        Mint m1{ 2 }, m2{ 6 };
+
+        auto b = m1 != m2;
+    }
+  ```
+
+## derleyiciye kod yazdirma
+  _ex_
+  ```cpp
+    class Mint {
+    public:
+        Mint(int x = 0) : mx(x) {}
+
+        bool operator==(const Mint& x) const = default; 
+
+    private:
+        int mx;
+    };
+
+    int main()
+    {
+        Mint m1{ 2 }, m2{ 6 };
+
+        auto b = m1 == m2;
+        auto b = m1 != m2;
+    }
+  ```
+
+## derleyici default edilen equality operatorleri su sekilde yazdirir:
+
+  _ex_
+  ```cpp
+    struct Nec {
+        T tx;
+        U ux;
+        M mx;
+
+        bool operator==(const Nec& other) const
+        {
+            return
+                tx == other.tx &&
+                ux == other.ux &&
+                mx == other.mx;
+        }
+    };
+  ```
+
+# lexicographical compare
+    ??
+
+    - iki elaman karsilastiriliyor
+    - bu elemanlarin 
+
+## algorithms header
+  _ex_
+  ```cpp
+  ```
+
+> yazilarin karsilastirilmasi default olarak lexicographical
+>   ankara < antalya
+>   cunku k is smaller than l
+
+
+
+  _ex_
+  ```cpp
+    vector<int> ivec1(100'000u, 10);
+    vector<int> ivec2(1, 20);
+
+    std::cout << "ivec1.size() = " << ivec1.size() << "\n";
+    std::cout << "ivec2.size() = " << ivec2.size() << "\n";
+
+    cout << boolalpha << (ivec2 > ivec1) << "\n";
+
+    // vector comp lexc degil? size a gore?
+  ```
+
+  _ex_
+  ```cpp
+    struct Data {
+        int ix;
+        unsigned ux;
+
+
+        // not a lexicographical compare, common pitfall
+        bool operator<(const Data& other) const
+        {
+            return ix < other.ix && ux < other.ux;
+
+        }
+
+        // lexicographical compare
+        bool operator<(const Data& other) const
+        {
+            if(ix < other.ix) 
+                return true;
+
+            if(other.ix < ix)
+                return false;
+
+            // operator== may not exist
+
+            return ux < other.ux;
+        }
+    };
+  ```
+
+# 3-way comparator (c++20)
+  - karsilastirmanin kesin sonucunu verir
+  - binary operator
+
+  _ex_
+  ```cpp
+    10 <=> 5;   // the type is not int
+    
+    (10 <=> 5) > 0;   // ok, type is boolean
+    
+    (10 <=> 5) <= 0;   //
+    
+    (10 <=> 5) == 0;   //
+  ```
+
+## 
+   
+  _ex_
+  ```cpp
+    #include<compare>
+
+    std::strong_ordering
+    std::weak_ordering
+    std::partial_ordering
+  ```
+
+### std::strong_ordering
+  strong equality:
+    ya birinci buyuk, ya ikinci buyuk, bunlar yanlissa birbirinie esit
+
+    ex: tam sayilar
+
+### std::weak_ordering
+  equivalance:
+  - birbirine esit degilse bile birbirine esit kabule edilebilir 
+
+  ex: case insentive type
+    masa == MASA
+
+### std::partial_ordering
+    (a == b) = false 
+        even when
+    (a < b) = false && (b < a) = false
+
+    ex: not a number
+
+  _ex_
+  ```cpp
+    #include <compare>
+
+    std::cout << typeid(10 <=> 5).name() << "\n";   // struct::std::string_ordering
+
+    std::cout << typeid(10 <=> 2.2.5).name() << "\n";   // struct::std::partial_ordering
+
+    std::strong_ordering::less
+    std::strong_ordering::equivalant
+    std::strong_ordering::equal
+  ```
+
+
+> 0 sabiti kullanilarak karsilastirma yapilabilir
+  _ex_
+  ```cpp
+    (10 <=> 5) == std::strong_ordering::greater;    //true
+    
+    (10 <=> 5) == 0 
+  ```
+
+  _ex_
+  ```cpp
+    a > b   a <=> b > 0 
+    a < b   a <=> b < 0 
+    a >= b  a <=> b >= 0 
+  ```
+
+  _ex_
+  ```cpp
+    int x = 12;
+    int y = 20;
+
+    cout << boolalpha << (strong_ordering::greater > 0) << "\n";
+    
+    cout << boolalpha << (partial_ordering::unordered > 0) << "\n"; // false
+    cout << boolalpha << (partial_ordering::unordered < 0) << "\n"; // false
+  ```
+
+  _ex_
+  ```cpp
+    strong_ordering::less != 0 // true
+    strong_ordering::less >= 0 // false 
+  ```
+
+  _ex_
+  ```cpp
+    a == b
+        // primary operator
+        // can be swapped? operandlar yer degistirebilir mi? evet
+
+    a != b
+        // primary operator, !(a==b)
+
+    a <=>b
+        // primary operator, then can be swapped
+        // swap version: 0 > (b <=> a)
+
+    a < b
+        // secondary operator, thus
+        // can be written as a primary operator
+
+        // a <=> b < 0     
+        // b <=> a > 0
+
+    a <= b
+        // (a <=> b) <= 0, or
+        //
+  ```
+
+# operator priority:
+    spaceship is higher than comparison operators
+
+  _ex_
+  ```cpp
+    auto x = 10 <=> 5 > 0;
+  ```
+
+> iderleyicinin default yazdigi fonksiyonda, 
+  elemanlar tanimlandigi siralamada karsilastirilir
+    - once taban siniflar sonra member elemanlar
+    - birden fazla taban sinif varsa, tanimlandiklari siralamada karsilastirilir
+    - pointer olmasi durumunda adreslerin esitligi
+
+  _ex_
+  ```cpp
+    struct Nec {
+        T tx;
+        U ux;
+        M mx;
+
+        bool operator==(const Nec& other) const
+        {
+            return
+                tx == other.tx &&
+                ux == other.ux &&
+                mx == other.mx;
+        }
+
+        bool operator<(const Nec& other) const
+        {
+            if (t < other.t)    return true;
+            if (other.t < t)    return false;
+            if (u < other.u)    return true;
+            if (other.u < u)    return true;
+        }
+    };
+  ```
+
+# ara, bi daha dinle
+
+  _ex_
+  ```cpp
+    class Wrapper {
+    private:
+        int m_id;
+
+    public:
+        constexpr Wrapper(int i) noexcept : m_id(i) {}
+        auto operator <=>(const Wrapper &other) const = default;
+    };
+
+    int main()
+    {
+        Wrapper x{245}, y{864};
+
+        std::cout << ( x == y); 
+        std::cout << ( x != y); 
+        std::cout << ( x > y); 
+        std::cout << ( x >= y); 
+        std::cout << ( x < y); 
+        std::cout << ( x <= y); 
+
+        std::cout << typeid(x <=> y).name();    //struct std::strong_ordering 
+    }
+  ```
+
+
+  _ex_
+  ```cpp
+    class Wrapper {
+    private:
+        double m_id;
+
+    public:
+        constexpr Wrapper(int i) noexcept : m_id(i) {}
+        auto operator <=>(const Wrapper &other) const = default;
+    };
+
+    int main()
+    {
+        std::cout << typeid(x <=> y).name();    //struct std::partial_ordering 
+    }
+  ```
+
+  _ex_
+  ```cpp
+  _ex_
+  ```cpp
+    class Wrapper {
+    private:
+        int m_id;
+
+    public:
+        constexpr Wrapper(int i) noexcept : m_id(i) {}
+        
+        constexpr bool operator ==(const Wrapper &other) const noexcept
+        {
+            return m_id == other.m_id;
+        }
+        
+        constexpr auto operator <=>(const Wrapper &other) const noexcept
+        {
+            return m_id <=> other.m_id;
+        }
+    };
+
+    int main()
+    {
+        Wrapper x{245}, y{864};
+
+        stc::cout << ( x == y); 
+        stc::cout << ( x != y); 
+        stc::cout << ( x > y); 
+        stc::cout << ( x >= y); 
+        stc::cout << ( x < y); 
+        stc::cout << ( x <= y); 
+    }
+  ```
+
+# kendimiz yazalim:
+    - class defintiion sira uymuyorsa
+    - kendimiz farkli sekilde karsilastirmak istiyorsak
+
+## three way operatoru kendimiz yazdigimizda
+    - operator== derleyici tarafindan yazilmaz
+
+  _ex_
+  ```cpp
+    #include <compare>
+
+    class Person {
+    public:
+        auto opearator<=>(const Person& other) const
+        {
+            if(auto cmp = m_first_name <=> other.m_first_name; cmp != 0)
+                return cmp;
+
+            if(auto cmp = m_last_name <=> other.m_last_name; cmp != 0)
+                return cmp;
+
+            return m_id <=> other.m_id;
+        }
+        
+    private:
+        std::string m_last_name;
+        std::string m_first_name;
+        int m_id;
+    };
+
+    int main()
+    {
+        Person p1, p2;
+        auto b1 = p1 < p2;
+        auto b2 = p1 <= p2;
+        auto b3 = p1 > p2;
+        auto b4 = p1 >= p2;
+        auto b5 = p1 == p2;     // not defined sonce we wrote operator<=>
+    }
+  ```
+
+# set icin less i desteklemesi gerekir
+  unordered_set operator==
+
+#
+    ordering     equality
+
+    ikisi de var
+    sadece equality var
+    ikisi de yok
+
+# <=> tanimlanmak zorunda mi?
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+    class identity {
+        // operator <=> is not declared
+
+    public:
+        bool operator<(const identity&) const;
+        bool operator==(const identity&) const;
+    };
+
+    struct Person {
+        identity m_id;
+        int m_no;
+
+        std::strong_ordering operator <=> (const Person& other) const
+        {
+            if(auto result = m_no <=> other.m_no; results != 0)
+                return result;
+
+            // retrun m_id <=> other.m_id; // syntax error, not declared in identity
+
+            if(m_id == other.m_id)
+                return std::strong_ordering::equal;
+
+            if(m_id < other.m_id)
+                return std::strong_ordering::less;
+
+            return std::strong_ordering::greater;
+        }
+    }
+  ```
+
+
+# kullandigimiz sinifin spaceship operatoru var  mi yok mu?
+    -> compile time kod yazmak icin genel bir template, standard da yok
+
+  _ex_
+  ```cpp
+    // added to C++23, not standard in C++20
+    template<typename T, typename U>
+    auto synth_three_way(const T& lhs, const T& rhs)
+    {
+        if constexpr (std::three_way_comparable_with<T, U>)
+            return lhs <=> rhs;
+
+        else {
+            if(lhs == rhs)
+                return std::strong_ordering::equal
+
+            if(lhs < rhs)
+                return std::strong_ordering::less
+
+            if(lhs < rhs)
+                return std::strong_ordering::greater
+        }
+
+        ??
+
+    }
+
+    class identity {
+        // operator <=> is not declared
+
+    public:
+        bool operator<(const identity&) const;
+        bool operator==(const identity&) const;
+    };
+
+    struct Person {
+        identity m_id;
+        int m_no;
+
+        std::strong_ordering operator <=> (const Person& other) const
+        {
+            if(auto result = m_no <=> other.m_no; results != 0)
+                return result;
+
+            return synth_three_way(m_id, other.m_id);
+        }
+    }
+  ```
+
+  _ex_
+  ```cpp
+    int x = 10;
+    int y = 20;
+
+    // these are the same
+    if(is_eq(x <=> y))
+        ;
+
+    if((x <=> y) == 0)
+        ;
+    
+    if(is_lte(x <=> y))
+    if(is_gteq(x <=> y))
+    ???
+    
+  ```
+
+# auto return type auyni tur bekler
+    ???
+
+#
+  _ex_
+  ```cpp
+    weak_ordering result1 = 1.2 <=> 3.4;
+    partial_ordering result2 ???
+  ```
+
+#
+  _ex_
+  ```cpp
+    class Person {
+        std::string gm_name;
+        double mval;
+
+        // syntax error
+        auto operator <=>(const Person& rhs) const
+        {
+            // strong_ordering
+            if(auto cmp = m_name <=> rhs.m_name; cmp != 0)
+                return cmp;
+
+            // partial_ordering
+            return mval <=> ths.mval;
+        }
+    };
+  ```
+
+solution
+  _ex_
+  ```cpp
+    class Person {
+        std::string gm_name;
+        double mval;
+
+        std::partial_ordering operator <=>(const Person& rhs) const
+        {
+            // strong_ordering
+            if(auto cmp = m_name <=> rhs.m_name; cmp != 0)
+                return cmp;
+
+            // partial_ordering
+            return mval <=> ths.mval;
+        }
+    };
+  ```
+    another solution
+  _ex_
+  ```cpp
+    class Person {
+        std::string gm_name;
+        double mval;
+
+        // 2 side strong ise strong
+        // partial orderoing, diger -> partial ordering
+        auto operator <=>(const Person& rhs) const ->
+        std::common_comparison_category_t<decltype(m_name <=> rhs.m_name), decltype(m_val <=> rhs.mval)>
+        {
+            // strong_ordering
+            if(auto cmp = m_name <=> rhs.m_name; cmp != 0)
+                return cmp;
+
+            // partial_ordering
+            return mval <=> ths.mval;
+        }
+    };
+  ```
+# satic_cast kurali - legal:
+    -
+ 
+    > kalitim iliskisi varsa hata vermemesi gerekir:
+  _ex_
+  ```cpp
+    class Base {};
+
+    class Der : public Base {};
+
+    int main()
+    {
+        Base mybase;
+
+        Der myder;
+
+        Der myder = static_cast<Der>(mybase);   // legal
+    }
+  ```
+
+  _ex_
+  ```cpp
+    strong_ordering so{};
+    partial_ordering po{};
+    
+    po = so;    // legal?
+    so = po;    // not legal
+
+    so = static_cast<strong_ordering>(po);  // syntax error, kalitim iliskisi degil
+  ```
+
+#
+  _ex_
+  ```cpp
+    struct Myint{
+        std::optional<int> mval{ std::nullopt };
+
+        bool operator ==(const Myint& other) const
+        {
+            if (!mval || !other.mval) 
+                return false;
+
+            return *mval == *other.mval;
+        }
+
+        std::partial_ordering operator <=>(const Myint& other) const
+        {
+            if(!mval || !other.mval)
+                return std::partial_ordering::unordered;
+
+            return *mval <=> other.mval;
+        }
+    };
+
+    int main()
+    {
+        ??
+        Myint{12} <=> Myint{4} > 0;
+        Myint{12} > Myint{4};    // true
+
+        std::cout << boolalpha << (Myint{123} < Myint{});   // false
+        std::cout << boolalpha << (Myint{123} > Myint{});   // false
+        std::cout << boolalpha << (Myint{123} == Myint{});  // false
+    }
+  ```
+
+# spaceship operator, engellenecek bir durum yoksa constexpr kabul edilir
+
+  _ex_
+  ```cpp
+    class Mint {
+    public:
+        explicit constexpr Mint(int val) : mval{val} {}
+        auto operator<=>(const Mint&) const = default;
+
+    private:
+        int mval;
+    };
+
+
+    template<typenmae T>
+    constexpr bool is_less_than(const T& lhs, const T& rhs)
+    {
+        return lhs < rhs;
+    }
+
+    int main()
+    {
+        std::cout << std::boolalpha;
+
+        constexpr Mint mint1{208};
+        constexpr Mint mint2{751};
+
+        constexpr auto b = is_less_than(mint1, mint2);
+    }
+  ```
+
+# sort algoritmalari operator< ister
+
+  _ex_
+  ```cpp
+    struct Point {
+        int x{};
+        int y{};
+        int z{};
+        auto operator<=>(const Point& p) const = default;
+    };
+
+    int main()
+    {
+        vector<Point> pvec;
+        Irand irand{0, 9};
+
+        for(int i =0; i < 100; ++i) {
+            pvec.emplace_back(irand(), irand(), irand());
+        }
+
+        sort(pvec.begin(), pvec.end());
+
+        for(const auto& [x, y, z] : pvec) {
+            std::cout << x << " " << y << " " << z << "\n"; 
+        }
+    }
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
+
+  _ex_
+  ```cpp
+  ```
