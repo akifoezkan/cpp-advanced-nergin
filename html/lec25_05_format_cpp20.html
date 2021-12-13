@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>lec25_05_format_cpp20.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="stdformat-c20">std::format (C++20)</h1>
+<blockquote>
+<p>pattern su<br>
+<strong>[ fill ][ alignment ][ sign ][ # ][ 0 ][ width ][ .prec ][ L ][ type ]</strong></p>
+</blockquote>
+<h2 id="printf">printf</h2>
+<ul>
+<li>[+] okunabilir</li>
+<li>[+] cok hizli (ozellikle iostream ile karsilastirildiginda)</li>
+<li><input type="checkbox" id="checkbox0"><label for="checkbox0">type-safe degil</label></li>
+<li><input type="checkbox" id="checkbox1"><label for="checkbox1">user-defined type lar icin kullanilamaz</label></li>
+<li>[+] local-dependent (setlocal, dillere gore farkli)</li>
+</ul>
+<h2 id="iostream">iostream</h2>
+<ul>
+<li><input type="checkbox" id="checkbox2"><label for="checkbox2">interface i cok kotu, C++ in en cok elestirilen kutuphanesi</label></li>
+<li><input type="checkbox" id="checkbox3"><label for="checkbox3">hantal, yavas</label></li>
+<li><input type="checkbox" id="checkbox4"><label for="checkbox4">okunmasi zor</label></li>
+<li><input type="checkbox" id="checkbox5"><label for="checkbox5">formatlama ve argumanlar birbirinde ayri degil</label></li>
+<li>[+] user-defined type icin extensible<br>
+kendi sinifimiz icin operator&lt;&lt; yazilabilir</li>
+</ul>
+<h2 id="stdformat">std::format</h2>
+<ul>
+<li>type safe</li>
+<li>hizli calisir</li>
+<li>extensible for user-defined types</li>
+<li>localizable, translatable</li>
+<li>readable</li>
+</ul>
+<p><em>ex</em></p>
+<pre class="hljs"><code><div>  <span class="hljs-keyword">using</span> <span class="hljs-keyword">namespace</span> <span class="hljs-built_in">std</span>;
+
+  <span class="hljs-keyword">time_t</span> timer;
+  time(&amp;timer);
+  <span class="hljs-keyword">auto</span> p = localtime (&amp;timer);
+
+  <span class="hljs-built_in">ostringstream</span> oss;
+
+  <span class="hljs-comment">// format soyle olsun: 02_05_1987_14_52_45</span>
+  
+  oss &lt;&lt; setw(<span class="hljs-number">2</span>) &lt;&lt; setfill(<span class="hljs-string">'0'</span>) &lt;&lt; p-&gt; tm_mday &lt;&lt; <span class="hljs-string">"_"</span> &gt;&gt; ...;
+
+  <span class="hljs-comment">// yazmasi zor</span>
+</div></code></pre>
+<blockquote>
+<p>std::format, iostream ve printf deki defficiency lere sahip degil ve efficient</p>
+</blockquote>
+<h2 id="intro">intro</h2>
+<ul>
+<li>baslik dosyasi format.hpp</li>
+<li>std::format()
+<ul>
+<li>return type: string</li>
+<li>input parametresinin type i derleyiciye bagli, ancak <strong>compile-time</strong> da <code>string_view</code>'e donusturulebilebilir bir tur olmak zorunda<br>
+<em>=&gt; &quot; parameter of unspecified type, whose initialization is valid only if the argument is convertible to std::string_view (for (1,3)) or std::wstring_view (for (2,4)), and the result of conversion is a constant expression and a valid format string for Args&quot;</em></li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>input parametresi compile time oldugu icin derleyici her turlu kontrolu yapabiliyor.<br>
+Note: compile-time da belirli hatalarin bulunmasi garantisi c++20 sonrasi geldi</p>
+</blockquote>
+<p><em>ex</em></p>
+<pre class="hljs"><code><div>  <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;format&gt;</span></span>
+
+  <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span>
+  </span>{
+      <span class="hljs-keyword">auto</span> s = <span class="hljs-built_in">std</span>::format();     <span class="hljs-comment">// can be stored as a string</span>
+
+      <span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-built_in">std</span>::format();      <span class="hljs-comment">// cikis akimina verilebilir since</span>
+                                  <span class="hljs-comment">// the return type is string</span>
+  }
+</div></code></pre>
+<p><em>ex</em></p>
+<pre class="hljs"><code><div>  <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;format&gt;</span></span>
+
+  <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span>
+  </span>{
+      <span class="hljs-keyword">auto</span> s = <span class="hljs-built_in">std</span>::format(<span class="hljs-string">"kadir c++ programcisidir"</span>);
+
+      <span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-built_in">std</span>::format(<span class="hljs-string">"kadir c++ programcisidir"</span>) &lt;&lt; <span class="hljs-string">"\n"</span>;
+  }
+</div></code></pre>
+<h3 id="%22%22-placeholder---formatlama-bilgisini-icerir">&quot;{}&quot; placeholder -&gt; formatlama bilgisini icerir</h3>
+<ul>
+<li>formatlama bilgisi yazilmadiginda &quot;default formatlama&quot; ozelligi kullanilir.</li>
+</ul>
+<p><em>ex:</em> default format for integer types is 10-base</p>
+<pre class="hljs"><code><div>  <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;format&gt;</span></span>
+
+  <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span>
+  </span>{
+      <span class="hljs-built_in">std</span>::<span class="hljs-built_in">string</span> name{<span class="hljs-string">"necati"</span>}
+      <span class="hljs-keyword">int</span> cnt{<span class="hljs-number">20</span>};
+
+
+      <span class="hljs-built_in">std</span>::<span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-built_in">std</span>::format(<span class="hljs-string">"{} kisisinin {} kitabi var"</span>, name, cnt) &lt;&lt; <span class="hljs-string">"\n"</span>;
+  }
+</div></code></pre>
+<p><em>ex</em></p>
+<pre class="hljs"><code><div>  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{} {}\n"</span>, <span class="hljs-string">"merhaba"</span>, <span class="hljs-string">"dunya"</span>);
+</div></code></pre>
+<h3 id="index-berlirtebiliriz">index berlirtebiliriz</h3>
+<p><em>ex</em></p>
+<pre class="hljs"><code><div>  
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{1} kisisinin {0} kitabi var\n"</span>, cnt, name); <span class="hljs-comment">// name cnt</span>
+      <span class="hljs-comment">// necati kisisinin 20 kitabi var</span>
+  
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{} kisiisnin {} kitabi var\n"</span>, cnt, name); 
+      <span class="hljs-comment">// 20 kisisinin necati kitabi var</span>
+
+</div></code></pre>
+<h3 id="ayni-arguman-birden-fazla-kez-kullanilabilir">ayni arguman birden fazla kez kullanilabilir</h3>
+<p><em>ex</em></p>
+<pre class="hljs"><code><div>  <span class="hljs-keyword">int</span> x = <span class="hljs-number">47802</span>;
+
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{0} {0} {0}"</span>, x);
+
+  
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{0:b} {0:x} {0}"</span>, x);
+</div></code></pre>
+<h3 id="kume-parantezi-icine-formatlama-ozelligi-girilebilir">kume parantezi icine formatlama ozelligi girilebilir</h3>
+<p><em>ex</em></p>
+<pre class="hljs"><code><div>  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{0:b} {0:x} {0:X}  {0:d} {0:o}"</span>, x);
+      - binary, hexadecimal, decimal, onluk
+</div></code></pre>
+<h3 id="genel-yapi">genel yapi</h3>
+<ul>
+<li>{}      -&gt; default</li>
+<li>{n}     -&gt; default, index</li>
+<li>{:fmt}  -&gt; formatlama nitelikleri ile formatlanacak</li>
+<li>{n:fmt} -&gt; index, formatlama bilgisi</li>
+</ul>
+<h2 id="format-specifier"><strong>format specifier</strong></h2>
+<ul>
+<li>printf de oldugu gibi bir takim bilesenler var</li>
+<li>genellikle opsiyonel</li>
+<li>bazilari digerlerinin varligini gerektirir</li>
+</ul>
+<blockquote>
+<p>pattern su
+[ fill ][ alignment ][ sign ][ # ][ 0 ][ width ][ .prec ][ L ][ type ]</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">representation</th>
+<th style="text-align:left">explanation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">fill</td>
+<td style="text-align:left">doldurma karakteri, default space</td>
+</tr>
+<tr>
+<td style="text-align:left">alignment</td>
+<td style="text-align:left">sag, sol, centered</td>
+</tr>
+<tr>
+<td style="text-align:left">sign</td>
+<td style="text-align:left">isaretin format bilgisi, ex: &quot;+&quot; gosterrilsin mi?</td>
+</tr>
+<tr>
+<td style="text-align:left">[#]</td>
+<td style="text-align:left">bazi formatlama bilgilerinde tamamlayici ozellik olarak kullanilir, ex: sayi sistemi tabani gosterilsin mi?</td>
+</tr>
+<tr>
+<td style="text-align:left">0 (padding zero)</td>
+<td style="text-align:left">yazma alaninin basini 0 ile doldursun mu? (mesela int yazarken)</td>
+</tr>
+<tr>
+<td style="text-align:left">width</td>
+<td style="text-align:left">output width</td>
+</tr>
+<tr>
+<td style="text-align:left">.prec</td>
+<td style="text-align:left">precision</td>
+</tr>
+<tr>
+<td style="text-align:left">L</td>
+<td style="text-align:left">localization properties</td>
+</tr>
+<tr>
+<td style="text-align:left">type</td>
+<td style="text-align:left">also includes number base info</td>
+</tr>
+</tbody>
+</table>
+<h2 id="indexing">indexing</h2>
+<pre><code>- fazla arguman olmasi bir hata degil
+  ancak belirli hatalar runtimeda exception a sebep olur
+- compile time da bulunamayan hatalar exception throw eder
+</code></pre>
+<p><em>ex:</em></p>
+<pre class="hljs"><code><div>  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{} {} {}\n"</span>, <span class="hljs-string">"Arda"</span>, <span class="hljs-string">"Ozlem"</span>, <span class="hljs-string">"Melih"</span>);
+  
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{1} {0} {2}\n"</span>, <span class="hljs-string">"Arda"</span>, <span class="hljs-string">"Ozlem"</span>, <span class="hljs-string">"Melih"</span>);
+          <span class="hljs-comment">// Ozlem Arda Melih</span>
+ 
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{2} {1} {0}\n"</span>, <span class="hljs-string">"Arda"</span>, <span class="hljs-string">"Ozlem"</span>, <span class="hljs-string">"Melih"</span>);
+          <span class="hljs-comment">// Melih Ozlem Arda</span>
+
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{2} {1} {0}\n"</span>, <span class="hljs-string">"Arda"</span>, <span class="hljs-string">"Ozlem"</span>, <span class="hljs-string">"Melih"</span>, <span class="hljs-string">"Tuncay"</span>); <span class="hljs-comment">// ok</span>
+  
+  
+  <span class="hljs-keyword">int</span> x = <span class="hljs-number">47802</span>;
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{0:b} {0:x} {0:o}\n"</span>, x);
+          <span class="hljs-comment">// 101010... baba 13.. </span>
+</div></code></pre>
+<h3 id="pozisyonel-indexleme-ile-manuel-indexleme-birarada-kullanilamaz">pozisyonel indexleme ile manuel indexleme birarada kullanilamaz</h3>
+<p><em>ex</em></p>
+<pre class="hljs"><code><div>  <span class="hljs-comment">// hata compile-time da yakalanamadi, run time hatasi verdi</span>
+  
+  <span class="hljs-keyword">try</span> (<span class="hljs-keyword">const</span> <span class="hljs-built_in">std</span>::exception&amp; ex){
+      <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{1} {0} {}\n"</span>, <span class="hljs-string">"Arda"</span>, <span class="hljs-string">"Ozlem"</span>, <span class="hljs-string">"Melih"</span>);
+  } <span class="hljs-keyword">catch</span> {
+      <span class="hljs-built_in">cout</span> &lt;&lt; ex.what();
+  }
+
+  <span class="hljs-comment">// 2020 sonrasi standard da compile-time da yakalanabilen butun hatalar icin garanti verilecek</span>
+</div></code></pre>
+<p><em>ex</em></p>
+<pre class="hljs"><code><div>  <span class="hljs-keyword">int</span> x = <span class="hljs-number">723423423</span>;
+
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"|{}|\n"</span>, x);    <span class="hljs-comment">// 10 luk sistem</span>
+  
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"|{0}|, |{0:d}|\n"</span>, x);    <span class="hljs-comment">// 10 luk sistem</span>
+  
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"|{0:x}|, |{0:X}|\n"</span>, x);    <span class="hljs-comment">// kucuk/buyuk harf hexadecimal</span>
+                                              <span class="hljs-comment">// 6e...</span>
+
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"|{0:#x}|, |{0:#X}|\n"</span>, x);    <span class="hljs-comment">// 0x[kucuk/buyuk harf hexadecimal]</span>
+                                                <span class="hljs-comment">// 0x6e...</span>
+
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"|{0:o}|, |{0:#o}|\n"</span>, x);     <span class="hljs-comment">//octal, 0+octal</span>
+                                                <span class="hljs-comment">// 3347..., 03347...</span>
+  
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"|{0:b}|, |{0:#b}|, |{0:#B}|\n"</span>, x);   <span class="hljs-comment">// 10001, 0b1001.., 0B101010 </span>
+</div></code></pre>
+<h3 id="boolean-degerler-icin-default-deger-true-false">boolean degerler icin default deger: true, false</h3>
+<p>1, 0 degil</p>
+<p><em>ex</em></p>
+<pre class="hljs"><code><div>  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{} {}\n"</span>, <span class="hljs-literal">true</span>, <span class="hljs-literal">false</span>);         <span class="hljs-comment">// true, false  (default, 1 degil)</span>
+  
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:s} {:s}\n"</span>, <span class="hljs-literal">true</span>, <span class="hljs-literal">false</span>);     <span class="hljs-comment">// true, false</span>
+  
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:b} {:b}\n"</span>, <span class="hljs-literal">true</span>, <span class="hljs-literal">false</span>);     <span class="hljs-comment">// 1, 0</span>
+
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:#b} {:#b}\n"</span>, <span class="hljs-literal">true</span>, <span class="hljs-literal">false</span>);     <span class="hljs-comment">// 0b1, 0b0</span>
+  
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:#rBb} {:#B}\n"</span>, <span class="hljs-literal">true</span>, <span class="hljs-literal">false</span>);   <span class="hljs-comment">// 0B1, 0B0</span>
+  
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:x} {:x}\n"</span>, <span class="hljs-literal">true</span>, <span class="hljs-literal">false</span>);       <span class="hljs-comment">// 1 0 </span>
+  
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:#x} {:#x}\n"</span>, <span class="hljs-literal">true</span>, <span class="hljs-literal">false</span>);     <span class="hljs-comment">// 0x1 0x0</span>
+  
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:#X} {:#X}\n"</span>, <span class="hljs-literal">true</span>, <span class="hljs-literal">false</span>);     <span class="hljs-comment">// 0X1 0X0</span>
+</div></code></pre>
+<h2 id="format-specifiers-table-and-pictures-for-explanation">format specifiers: table and pictures for explanation</h2>
+<p>format_specifiers
+<img src="photos/format_specifiers.png" alt=""></p>
+<p>supported_format_specifiers
+<img src="photos/format_supported_specifiers.png" alt=""></p>
+<h3 id="gercek-sayi">gercek sayi</h3>
+<p><em>ex</em></p>
+<pre class="hljs"><code><div>  <span class="hljs-keyword">double</span> dval = <span class="hljs-number">1234.78981232</span>;
+
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:f}\n"</span>, dval); <span class="hljs-comment">// fixed 12323.1321312</span>
+
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:e}\n"</span>, dval); <span class="hljs-comment">// scientific: 7.812322e+11</span>
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:E}\n"</span>, dval); <span class="hljs-comment">// scientific: 7.81232E+11</span>
+</div></code></pre>
+<h3 id="string">string</h3>
+<p><em>ex:</em></p>
+<pre class="hljs"><code><div>  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{}\n"</span>, <span class="hljs-string">"necati ergin"</span>);
+  
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:s}\n"</span>, <span class="hljs-string">"necati ergin"</span>);
+  
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:s}\n"</span>, <span class="hljs-number">10</span> &gt; <span class="hljs-number">5</span>);
+</div></code></pre>
+<h2 id="hizalama">Hizalama</h2>
+<p><em>ex:</em></p>
+<pre class="hljs"><code><div>  <span class="hljs-keyword">int</span> x = <span class="hljs-number">8765</span>;
+
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:18}{}"</span>, x, <span class="hljs-string">"ali"</span>) &lt;&lt; <span class="hljs-string">"\n"</span>;    <span class="hljs-comment">// x i 18 karakterlik alan</span>
+                                                  <span class="hljs-comment">// fill char = space</span>
+
+  <span class="hljs-comment">// hizalama</span>
+  format(<span class="hljs-string">"{:&lt;18}{}"</span>, x);      <span class="hljs-comment">// x i 18 karakter, sola dayali (&lt;-)</span>
+                              <span class="hljs-comment">// |8765             |</span>
+
+  format(<span class="hljs-string">"{:&gt;18}{}"</span>, x);      <span class="hljs-comment">// x i 18 karakter, saga dayali (-&gt;)</span>
+                              <span class="hljs-comment">// |             8765|</span>
+  
+  format(<span class="hljs-string">"{:^18}{}"</span>, x);      <span class="hljs-comment">// x i 18 karakter, orta</span>
+                              <span class="hljs-comment">// |     8765        |</span>
+
+  <span class="hljs-comment">// fill char</span>
+  format(<span class="hljs-string">"{:.&lt;18}{}"</span>, x);      <span class="hljs-comment">// x i 18 karakter, sola dayali (&lt;-)</span>
+                               <span class="hljs-comment">// |8765.............|</span>
+
+  format(<span class="hljs-string">"{:.&gt;18}{}"</span>, x);      <span class="hljs-comment">// x i 18 karakter, saga dayali (-&gt;)</span>
+                               <span class="hljs-comment">// |.............8765|</span>
+  
+  format(<span class="hljs-string">"{:.^18}{}"</span>, x);      <span class="hljs-comment">// x i 18 karakter, orta</span>
+                              <span class="hljs-comment">// |.....8765........|</span>
+</div></code></pre>
+<h2 id="precision">Precision</h2>
+<p><em>ex</em></p>
+<pre class="hljs"><code><div>  <span class="hljs-comment">// precision</span>
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:6}{}"</span>, <span class="hljs-string">"necati ergin"</span>);   <span class="hljs-comment">// 6 -&gt; yazma alani genisligi</span>
+                                              <span class="hljs-comment">// necati ergin</span>
+  
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:.6}{}"</span>, <span class="hljs-string">"necati ergin"</span>);  <span class="hljs-comment">// 6 -&gt; precision</span>
+                                              <span class="hljs-comment">// necati</span>
+                                              <span class="hljs-comment">// sadece 6 karakter yazdir</span>
+
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:.3}{}"</span>, <span class="hljs-string">"necati ergin"</span>);  <span class="hljs-comment">// 3 -&gt; precision</span>
+                                              <span class="hljs-comment">// nec</span>
+ 
+  <span class="hljs-keyword">int</span> x = <span class="hljs-number">5</span>;
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:.{}}{}"</span>, <span class="hljs-string">"necati ergin"</span>, x);    <span class="hljs-comment">// precisioni belirleyen x</span>
+                                                    <span class="hljs-comment">// necat</span>
+
+  <span class="hljs-keyword">int</span> x = <span class="hljs-number">762374</span>;
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:15x}\n"</span>, x);    <span class="hljs-comment">// 15 karakterlik alana hexadecimal </span>
+  
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:#15X}\n"</span>, x);   <span class="hljs-comment">// 15 karakterlik alana hexadecimal </span>
+                                    <span class="hljs-comment">// 0X23123</span>
+
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:&lt;#15X}\n"</span>, x);    <span class="hljs-comment">// 15 karakterlik alana hexadecimal </span>
+                                      <span class="hljs-comment">// sola dayali</span>
+
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:_&lt;#15X}\n"</span>, x);   <span class="hljs-comment">// 15 karakterlik alana hexadecimal </span>
+                                      <span class="hljs-comment">// sola dayali</span>
+                                      <span class="hljs-comment">// fill char: _</span>
+
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"{:-&gt;#15X}\n"</span>, x);   <span class="hljs-comment">// 15 karakterlik alana hexadecimal </span>
+                                      <span class="hljs-comment">// saga dayali dayali</span>
+                                      <span class="hljs-comment">// fill char: -</span>
+                                      <span class="hljs-comment">//  ------0X53D..</span>
+</div></code></pre>
+<h2 id="sign">Sign</h2>
+<p><em>ex</em></p>
+<pre class="hljs"><code><div>  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"|{0}|\n"</span>, <span class="hljs-number">94</span>);    <span class="hljs-comment">// index 0</span>
+                                    <span class="hljs-comment">// pozitif deger default olarak "+" sign i koymaz</span>
+                                    <span class="hljs-comment">// |94|</span>
+  
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"|{0}|\n"</span>, <span class="hljs-number">-94</span>);   <span class="hljs-comment">// index 0</span>
+                                    <span class="hljs-comment">// negatif deger default olarak "-" sign i koyar</span>
+                                    <span class="hljs-comment">// |-94|</span>
+  
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"|{0}| {0:-}\n"</span>, <span class="hljs-number">94</span>);  <span class="hljs-comment">// - isaretini goster (zaten default)</span>
+                                          <span class="hljs-comment">// pozitif deger</span>
+                                          <span class="hljs-comment">// |94| |94|</span>
+  
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"|{0}| |{0:-}|\n"</span>, <span class="hljs-number">-94</span>); <span class="hljs-comment">// - isaretini goster</span>
+                                          <span class="hljs-comment">// negatif deger</span>
+                                          <span class="hljs-comment">// |-94| |-94|</span>
+                                              
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"|{0}| |{0: }|\n"</span>, <span class="hljs-number">94</span>);    <span class="hljs-comment">// space char " "</span>
+                                            <span class="hljs-comment">// pozitifse bosluk gonder</span>
+                                            <span class="hljs-comment">// |94|, | 94|</span>
+
+  <span class="hljs-built_in">cout</span> &lt;&lt; format(<span class="hljs-string">"|{0}| |{0: }|\n"</span>, <span class="hljs-number">-94</span>);   <span class="hljs-comment">// space char " "</span>
+                                            <span class="hljs-comment">// pozitifse bosluk gonder</span>
+                                            <span class="hljs-comment">// |-94|, |-94|</span>
+</div></code></pre>
+
+</body>
+</html>

@@ -52,6 +52,12 @@
 ## polymorphic behaviour
   _ex_
   ```cpp
+    #include<variant>
+    #include<iostream>
+    #include<vector>
+    
+    using namespace std;
+
     class Circle {
     public:
         void render()
@@ -68,6 +74,14 @@
         }
     };
 
+    class Triangle {
+    public:
+        void render()
+        {
+            std::cout << "triangle is being rendered\n";
+        }
+    };
+    
     class Polygon {
     public:
         void render()
@@ -76,15 +90,8 @@
         }
     };
 
-    class Triangle {
-    public:
-        void render()
-        {
-            std::cout << "triangle is being rendered\n";
-        }
-    };
 
-    using shape = std::variant<Circle, Square, Triangle, Polygon>;
+    using shape = variant<Circle, Square, Triangle, Polygon>;
 
     int main()
     {
@@ -95,11 +102,10 @@
         svec.emplace_back(Triangle{});
         svec.emplace_back(Polygon{});
 
-        for(Auto& object : svec) {
-            visit([](auto &object) { object.render(); })
+        for(auto& object : svec) {
+            visit([](auto &object) { object.render(); }, object);
         }
     }
-
   ```
 
   _ex_
