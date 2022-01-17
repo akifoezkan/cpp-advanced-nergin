@@ -1,0 +1,37 @@
+#blogs
+
+## foonathan
+  - cpp con algorithms talk u da guzel  
+  - Jonathan Boccara  
+
+## https://www.jonathanmueller.dev
+  - daha agir kutuphane gelistirmek uzerine cok iyi  
+
+## Dan Saks
+  - cok iyi bir egitmen
+  - https://www.dansaks.com/
+
+## Thomas Kim
+  - koreli
+  - kaliteli icerik
+
+## Stephan T La...
+  - uzun sure komite uyesi
+  - bir cok onerisi kabul edildi
+
+============
+# format:
+  - https://www.zverovich.net/
+  - https://github.com/fmtlib/fmt
+  
+# c++ daily quests:
+  - https://twitter.com/shafikyaghmour
+
+========== books ======================
+# Books:
+## object oriented:
+  - Refactoring(***) - Improving the Design of Existing Code, Martin Fowler
+  - Robert C. Martin (Uncle Bob)
+  - pragmatic programmer, David Thomas
+  - Object-Oriented Analysis & Design with Applications, Grady Booch
+

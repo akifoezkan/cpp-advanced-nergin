@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>lec32_object_oriented.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="summary-of-object-oriented-principles-for-c-developers">Summary of Object Oriented Principles for C++ developers</h1>
+<h2 id="terms">Terms</h2>
+<ul>
+<li>analysis  -&gt; to know what to do</li>
+<li>design    -&gt; to know how to do</li>
+<li>implementation</li>
+</ul>
+<p>&quot;
+Designing object-oriented programming is hard, and designing reusable object-oriented software is even harder.</p>
+<ul>
+<li>You must
+<ul>
+<li>find pertinent objects,</li>
+<li>factor them into classes at the right granularity,</li>
+<li>define class interfaces and inheritance hierarchies,</li>
+<li>and establish key relationships among them.</li>
+</ul>
+</li>
+<li>Your design should be specific to the problem at hand but also general enough to address future problems and requirements.</li>
+<li>You also want to avoid redesign, or at least minimize it.</li>
+</ul>
+<p>Experienced object-oriented designers will tell you that a reusable and flexible design is difficult if not impossible to get &quot;right&quot; the first time.<br>
+Before a design is finished, they usually try to use it several times, modifying it each time.
+&quot;</p>
+<h2 id="symptoms-of-a-bad-design">Symptoms of a bad design</h2>
+<p>Robert C. Martin (Uncle Bob)</p>
+<ul>
+<li>Rigidity</li>
+<li>Fragility</li>
+<li>Immobility</li>
+<li>Viscosity</li>
+<li>Needless complexity</li>
+<li>Needless repetition</li>
+<li>Opacity</li>
+</ul>
+<h2 id="rigidity">Rigidity</h2>
+<ul>
+<li>katilik</li>
+<li>degisimin kolay yapilamamasi</li>
+<li>ripple effect: bir yeri degistirmek icin bir suru farkli yeri de degistirmek gerekir</li>
+</ul>
+<p>&quot;Rigidity is the tendency for software to be difficult to change, even in simple wats.
+Every change causes a cascade of subsequent changes in dependant modules&quot;. (Design Principles and Design Patterns by Uncle Bob)</p>
+<ul>
+<li>The design is hard to change
+<ul>
+<li>changes propogate via dependencies to other modules</li>
+<li>no continuity in the code</li>
+</ul>
+</li>
+<li>Management reluctance to change if anything becomes the policy</li>
+</ul>
+<h2 id="fragility">Fragility</h2>
+<ul>
+<li>
+<p>kirilganlik</p>
+</li>
+<li>
+<p>closely related to rigidity</p>
+</li>
+<li>
+<p>The design is easy to break</p>
+<ul>
+<li>The code breaks in unexpected places that have no conceptual realationship with the changed area</li>
+</ul>
+</li>
+<li>
+<p>Signs:</p>
+<ul>
+<li>some modules are constantly on the bug list</li>
+<li>time is used finding bugs, not fixing them</li>
+</ul>
+</li>
+</ul>
+<h2 id="immobility">Immobility</h2>
+<ul>
+<li>The design is hard to reuse</li>
+<li>Telltale sign:
+<ul>
+<li>a module could be reused but the effort and risk of separating it from the original environment is too high</li>
+</ul>
+</li>
+</ul>
+<h2 id="viscosity-akiskanlik">Viscosity (akiskanlik):</h2>
+<ul>
+<li>it is easy to do wrong thing, hard to go correct thing
+<ul>
+<li>design a uygun cozumleri uygulamak, uygun olmayan cozumlere gore daha zor</li>
+</ul>
+</li>
+<li>the development environment is slow and inefficient</li>
+<li>telltale signs:
+<ul>
+<li>when a change is needed, you are tempted to hack rather than to preserve the original design</li>
+</ul>
+</li>
+</ul>
+<h2 id="needless-repetition">Needless Repetition</h2>
+<ul>
+<li>kotu tasarimin sonucu olarak programcilar kopyala-yapistir yapar</li>
+</ul>
+<h2 id="opacity">Opacity</h2>
+<ul>
+<li>the tendenceny  of a module to become more difficult to undestand
+<ul>
+<li>a constant effort is needed to keep the code readable</li>
+</ul>
+</li>
+<li>telltale sign:
+<ul>
+<li>you are reluctant to fix somebody else's code - or even your own!</li>
+</ul>
+</li>
+</ul>
+<h2 id="needless-complexity">Needless Complexity</h2>
+<ul>
+<li>too much anticipation of future needs</li>
+<li>developers try to protect themselves against probable future changes</li>
+<li>telltale sign: investing in uncertainty</li>
+</ul>
+<p>Extra complexity is needed only when designing an application framework or customizable component!</p>
+<p>===</p>
+<h1 id="cohesion">cohesion</h1>
+<ul>
+<li>ozyapiskanlik</li>
+<li>intra module</li>
+<li>modullerin kendi bilesenleri arasindaki alakanin yogunlugu
+<ul>
+<li>ex: sinifin sorumluluklari ne kadar birbiriyle alakali</li>
+</ul>
+</li>
+<li>internal glue of the module</li>
+</ul>
+<p>=&gt; there are metrics and programs that show the cohesion ratio but there is no standard</p>
+<p>book: pragmatic programmer</p>
+<h2 id="low-cohesion">low cohesion</h2>
+<ul>
+<li>monolitik siniflar</li>
+<li>siniflarin onlarca farkli sorumlulugu var</li>
+<li>low maintainability</li>
+</ul>
+<p><em>ex</em> low cohesion</p>
+<ul>
+<li>stdlib.h
+* random number generators
+* exit/abort
+* malloc/calloc/realloc/free
+* atoi
+* abs
+* qsort</li>
+</ul>
+<h2 id="higher-cohesion">higher cohesion</h2>
+<ul>
+<li>higher maintanability</li>
+<li>higher reusability</li>
+</ul>
+<h1 id="cohesion-categories-interview">cohesion categories (interview)</h1>
+<p>from worse to best:</p>
+<ul>
+<li>coincidental</li>
+<li>logical</li>
+<li>temporal</li>
+<li>procedural</li>
+<li>communicational</li>
+<li>sequence</li>
+<li>functional</li>
+</ul>
+<h2 id="coincidental-cohesion-bad">coincidental cohesion (bad)</h2>
+<ul>
+<li>rastgele bir araya gelmisler</li>
+<li>birden fazla sorumluluk var</li>
+<li>farkli isler yapan bilesenler var</li>
+</ul>
+<p><em>ex:</em> utility headers</p>
+<h2 id="logical-cohesion-mostly-bad">logical cohesion (mostly bad)</h2>
+<ul>
+<li>same objective: encryption, math</li>
+<li>birliktelik temasi var ama sadece kavramsal
+ex: her seyi encrypt ederiz
+ex: okuma islemi (nereden olursa olsun)
+ex: alan hesaplama (ne olursa olsun)</li>
+</ul>
+<h2 id="temporal-cohesion-bad">temporal cohesion (bad)</h2>
+<ul>
+<li>zamana bagli bir birliktelik var</li>
+</ul>
+<p><em>ex:</em>
+initialize (ayni zaman icersinde yapilan islemler)</p>
+<pre class="hljs"><code><div>  <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Init</span> {</span>
+      init_printer();
+      init_monitor();
+      init_disk();
+      ...
+  }
+</div></code></pre>
+<h2 id="procedural-cohesion-bad-but-not-as-bad-as-the-former-ones">procedural cohesion (bad but not as bad as the former ones)</h2>
+<ul>
+<li>elements of a module have different responsibilities for the same task</li>
+<li>eylemler arasi baglanti zayif, ayni amacin farkli adimlari</li>
+<li>generally low reusability</li>
+</ul>
+<p><em>ex:</em></p>
+<pre class="hljs"><code><div>  <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MakeCake</span> {</span>
+      addIngredients();
+      <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mix</span><span class="hljs-params">()</span></span>;
+      <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">bake</span><span class="hljs-params">()</span></span>;
+      <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">cool</span><span class="hljs-params">()</span></span>;
+      ...
+  }
+</div></code></pre>
+<h2 id="communicational-informational-cohesion">communicational/ informational cohesion</h2>
+<ul>
+<li>ogeler ayni veri uzerinde islem yaptigi icin bir araya gelmisler</li>
+<li>farkli islemler, ayni veri uzerinde calisiyor</li>
+</ul>
+<h2 id="sequential-cohesion-mostly-good">sequential cohesion (mostly good)</h2>
+<ul>
+<li>modullerden birisinin ciktisi, digerinin girdesi</li>
+</ul>
+<p><em>ex:</em> dosyadan oku, okunan dosyadan islem yap, islem sonucunu yaz</p>
+<h2 id="functional-cohesion-ideal-situation">functional cohesion (ideal situation)</h2>
+<ul>
+<li>modulun elemanlarinin tek bir gorevi var</li>
+<li>fonksiyonlarin hepsi gerekli
+<ul>
+<li>refactoring sirasinda bu fonksiyonlardan hic birini ayiramayizz</li>
+</ul>
+</li>
+</ul>
+<p>===</p>
+<h1 id="coupling">coupling</h1>
+<ul>
+<li>inter module relationship</li>
+<li>programi olusturan modullerin birbirleri arasindaki iliski</li>
+</ul>
+<p>it is bad to have coupling, dependency between modules.
+Yet, it cannot be eliminated since modules should talk with each other.</p>
+<p>good: lowly coupled/ loosely coupled
+bad: high coupling</p>
+<h3 id="decouple-couplinging-ortadan-kaldirmak">decouple: couplinging ortadan kaldirmak</h3>
+<ul>
+<li>design patterns aim decreasing coupling</li>
+<li>iliski interface uzerinden yurumeli</li>
+</ul>
+<h1 id="categories-of-coupling">categories of coupling</h1>
+<p>from tight (bad) to  loose (good)</p>
+<ul>
+<li>content level coupling</li>
+<li>common coupling</li>
+<li>Control couping</li>
+<li>Stamp coupling</li>
+<li>Data coupling</li>
+</ul>
+<p>tight:
+- more interdependency
+- more coordination
+- more information flow</p>
+<p>loose:</p>
+<ul>
+<li>less interdependency</li>
+<li>less coordination</li>
+<li>less information flow</li>
+</ul>
+<h2 id="content-level-coupling">content level coupling</h2>
+<ul>
+<li>bir modul, baska bir modulun implementationina erisir</li>
+<li>data hiding ihlal edilmis</li>
+<li>cogunlukla programlama dilleri bunu engelliyor</li>
+</ul>
+<h2 id="common-coupling">common coupling</h2>
+<ul>
+<li>birden fazla modul ayni dataya erisir</li>
+<li>data nin sorumlulugu kimde belli degil</li>
+<li>singleton bir common coupling olusturur (maskeli global degisken)</li>
+<li>fragility (beklenmeyen yan etkiler)</li>
+</ul>
+<h2 id="control-coupling">control coupling</h2>
+<ul>
+<li>bir module diger modulun calisma akisini degistirir</li>
+<li>patolojik coupling</li>
+<li>ok:  moduller birbirinin ic yapilarini bilmiyorlarsa cogunlukla problem yok</li>
+<li>bad: bir modul diger modulun nasil calistigini biliyorsa cok kotu</li>
+</ul>
+<h2 id="stamp-coupling">stamp coupling</h2>
+<ul>
+<li>2 modul arasi bir veri yapisinin kullanimi acisindan bir baglanti var</li>
+<li>bad: bir veri yapisi buna erisimi olmayan bir modulde kullaniliyorsa ve bu modul bu veri yapisinin nasil manipule edilecegi bilgisine sahipse kotu.</li>
+</ul>
+<p>=&gt; bad but used frequently in C++: because of efficiency</p>
+<ul>
+<li>C++ programmers want data-oriented programming, not object oriented</li>
+</ul>
+<h2 id="data-coupling-ideal">data coupling (ideal)</h2>
+<ul>
+<li>moduller arasi sadece parametre yoluyla iletisim var</li>
+</ul>
+<h1 id="decreasing-coupling">decreasing coupling</h1>
+<ul>
+<li>modullerin sinirlarini fonksiyonel olarak sinirlandirmak</li>
+<li>seperation of concerns
+<ul>
+<li>birbiriyle dogrudan alakasi olmayan concernler ayri ayri gelistirilsin</li>
+<li>ayni modul icerisindeki ogeler yuksek cohesion icinde olmali</li>
+</ul>
+</li>
+</ul>
+<p>why inheritance is crucial for object oriented programming:</p>
+<ul>
+<li>coupling i dusuk tutmanin en temel yolu interface ile baglanmak</li>
+<li>inheritance demek objelerin birbiriyle interface uzerinden haberlesmesi demek</li>
+<li>interface ile haberlesmek ayni zamanda maliyet demek, kalitim/runtime polymorphism demek</li>
+</ul>
+<p>===</p>
+<h1 id="terms-in-object-oriented-programming">Terms in Object oriented Programming:</h1>
+<p>cogunlukla soyutlama seviyeleri ile ilgili
+stack overflow: bu kavramlarin taxonomy
+gredy butch: object ...</p>
+<h2 id="taxonomy-from-abstract-to-concrete">Taxonomy: From abstract to concrete</h2>
+<p>-Level-1: Main principles (Level - 1)</p>
+<ul>
+<li>abstraction</li>
+<li>encapsulation</li>
+<li>hierarchy</li>
+<li>inheritance, aggregation, modularity</li>
+</ul>
+<ul>
+<li>
+<p>Level-2: Principals that aids and better main principles (Level - 2)</p>
+<ul>
+<li>Solid principles</li>
+<li>Grasp principles</li>
+<li>law of Demeter</li>
+</ul>
+</li>
+<li>
+<p>Level-3: Design Patterns (Level - 3)</p>
+</li>
+<li>
+<p>Level-4: Heuristics (Level - 4)
+book: object oriented design heuristics</p>
+</li>
+<li>
+<p>Level-5: Guidelines (Level - 5)</p>
+</li>
+</ul>
+<p>===</p>
+<h1 id="solid-principles-robert-c-martin">Solid principles (Robert C. Martin)</h1>
+<p>[S]ingle Responsibility Principle (SRP)
+[O]pen Closed Principle (OCP)
+[L]iskov Substitution Principle (LSP)
+[I]nterface Segregation Principle (ISP)
+[D]ependancy Inversion Principle (DIP)</p>
+<h2 id="single-responsibility-principle">Single Responsibility Principle:</h2>
+<ul>
+<li>bir sinifin bir sorumlulugu olmali</li>
+<li>eger bir fonksiyon degisirse diger fonksiyonlarda ayni hedefe yonelik degismeli ???</li>
+<li>avoid &quot;and&quot; in responsibility</li>
+</ul>
+<p>=&gt; suphe cekici noktalar (code smell):</p>
+<ul>
+<li>testlerde cok fazla case var</li>
+<li>siniflarin isimlendirilmesinde &quot;and&quot; var</li>
+<li>ctor da cok fazla parametresi olmasi</li>
+<li>fonksiyonlarin kodunun uzun olmasi</li>
+</ul>
+
+</body>
+</html>
