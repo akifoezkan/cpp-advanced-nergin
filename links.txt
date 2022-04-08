@@ -35,3 +35,5 @@
   - pragmatic programmer, David Thomas
   - Object-Oriented Analysis & Design with Applications, Grady Booch
 
+## concurrency in action
+  - antonhy williams: ayni zamanda konusmalari da var
